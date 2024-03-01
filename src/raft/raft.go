@@ -28,6 +28,18 @@ import (
 	"6.5840/labrpc"
 )
 
+type LogEntry struct{
+	Command interface{}
+	Term int
+}
+
+type ServerState int
+
+const (
+	Follower    ServerState = iota + 1 
+	Candidate                       
+	Leader                      
+)
 
 // as each Raft peer becomes aware that successive log entries are
 // committed, the peer should send an ApplyMsg to the service (or
@@ -61,6 +73,25 @@ type Raft struct {
 	// Your data here (3A, 3B, 3C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
+
+	//Persistent state on all servers:
+	currentTerm int 
+	votedFor int
+	log []LogEntry
+
+	//Volatile state on all servers:
+	//commitIndex int
+	//lastApplied int
+
+	//Volatile state on leaders:
+	//nextIndex []int
+	//matchIndex []int
+
+	//other election stuff
+	serverState ServerState
+	votesCount int
+	lastHeartBeat time.Time
+
 
 }
 
