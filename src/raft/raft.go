@@ -119,6 +119,7 @@ func (rf *Raft) ToCandidate(){
 //lock must be held before calling this
 func (rf *Raft) ToLeader(){
 	rf.serverState = Leader
+	//fmt.Printf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
 }
 //lock must be held before calling this
 func (rf *Raft) VotingFor(CandidateId int){
@@ -131,6 +132,8 @@ func (rf *Raft) VotingFor(CandidateId int){
 func (rf *Raft) GetState() (int, bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	//fmt.Printf("current server%v status%v\n", rf.me, rf.serverState)
+	
 	return rf.currentTerm, rf.serverState == Leader
 }
 
@@ -217,6 +220,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	} else if(rf.votedFor == -1 || rf.votedFor == args.CandidatId){
 		reply.VoteGranted = true
 		rf.VotingFor(args.CandidatId)
+		//fmt.Printf("server: %v term:%v Voted: %v\n", rf.me, rf.currentTerm, args.CandidatId)
 	} else {
 		reply.VoteGranted = false
 	}
@@ -256,7 +260,8 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 		rf.mu.Lock()
 		if rf.serverState == Candidate{
 			rf.votesCount += 1
-			if rf.votedFor == len(rf.peers)/2 + 1{
+			//fmt.Printf("server:%v term: %v votes:%v lenpeers%v\n", rf.me, rf.currentTerm, rf.votesCount, )
+			if rf.votesCount == len(rf.peers)/2 + 1{
 				rf.ToLeader()
 			}
 		}
@@ -384,12 +389,12 @@ func (rf *Raft) ElectionTicker() {
 		lastHeartBeat := rf.lastHeartBeat
 		serverState := rf.serverState
 
-		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(300,500){
+		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(100,150){
 			rf.mu.Unlock()
 			time.Sleep(getRandtime(150, 250))
 			continue
 		}
-
+		//fmt.Printf("server %v starts election\n", rf.me)
 		//start elections
 		rf.ToCandidate()
 		//reset the election timeout 
@@ -411,7 +416,6 @@ func (rf *Raft) ElectionTicker() {
 }
 
 func (rf *Raft) HeartBeatTicker() {
-	DPrintf("server %v starting elections", rf.me)
 
 	for !rf.killed(){
 		// Your code here (3A)
@@ -422,6 +426,7 @@ func (rf *Raft) HeartBeatTicker() {
 			time.Sleep(getRandtime(100, 150))
 			continue
 		}
+		//fmt.Printf("leader %v is sending %v\n ", rf.me, time.Now())
 		//send heartbeats
 		//reset the election timeout 
 		rf.lastHeartBeat = time.Now()
@@ -438,7 +443,7 @@ func (rf *Raft) HeartBeatTicker() {
 		
 		// pause for a random amount of time between 100 and 150
 		// milliseconds.
-		time.Sleep(getRandtime(100, 150))
+		time.Sleep(getRandtime(100, 100))
 	}
 }
 
@@ -457,11 +462,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.peers = peers
 	rf.persister = persister
 	rf.me = me
-	DPrintf("server %v starting elections", rf.me)
 
 	// Your initialization code here (3A, 3B, 3C).		
 	rf.lastHeartBeat = time.Now()
-	//.Add(getRandtime(200,250))
 	rf.serverState = Follower
 	rf.currentTerm = 1
 	rf.votedFor = -1

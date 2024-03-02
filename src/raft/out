@@ -1,12 +1,1539 @@
 Test (3A): initial election ...
---- FAIL: TestInitialElection3A (5.04s)
-    config.go:454: expected one leader, got none
+server 2 starts election
+server: 0 term:2 Voted: 2
+server: 1 term:2 Voted: 2
+server:2 Term:2 is leader
+ leader 2 is sending 2024-03-01 15:08:57.418307 -0500 EST m=+0.268333001
+ leader 2 is sending 2024-03-01 15:08:57.520393 -0500 EST m=+0.370418084
+ current server0 status1
+current server1 status1
+current server2 status3
+leader 2 is sending 2024-03-01 15:08:57.621501 -0500 EST m=+0.471524417
+ current server0 status1
+current server1 status1
+current server2 status3
+leader 2 is sending 2024-03-01 15:08:57.722598 -0500 EST m=+0.572620584
+ leader 2 is sending 2024-03-01 15:08:57.823209 -0500 EST m=+0.673231126
+ leader 2 is sending 2024-03-01 15:08:57.924305 -0500 EST m=+0.774326167
+ leader 2 is sending 2024-03-01 15:08:58.025465 -0500 EST m=+0.875485334
+ leader 2 is sending 2024-03-01 15:08:58.126573 -0500 EST m=+0.976592251
+ leader 2 is sending 2024-03-01 15:08:58.228081 -0500 EST m=+1.078100042
+ leader 2 is sending 2024-03-01 15:08:58.329302 -0500 EST m=+1.179319542
+ leader 2 is sending 2024-03-01 15:08:58.430425 -0500 EST m=+1.280441876
+ leader 2 is sending 2024-03-01 15:08:58.531546 -0500 EST m=+1.381562209
+ leader 2 is sending 2024-03-01 15:08:58.632275 -0500 EST m=+1.482290667
+ leader 2 is sending 2024-03-01 15:08:58.733365 -0500 EST m=+1.583379209
+ leader 2 is sending 2024-03-01 15:08:58.834446 -0500 EST m=+1.684459251
+ leader 2 is sending 2024-03-01 15:08:58.93575 -0500 EST m=+1.785762626
+ leader 2 is sending 2024-03-01 15:08:59.036279 -0500 EST m=+1.886290959
+ leader 2 is sending 2024-03-01 15:08:59.141803 -0500 EST m=+1.991814667
+ leader 2 is sending 2024-03-01 15:08:59.24291 -0500 EST m=+2.092920501
+ leader 2 is sending 2024-03-01 15:08:59.343994 -0500 EST m=+2.194003001
+ leader 2 is sending 2024-03-01 15:08:59.444911 -0500 EST m=+2.294919667
+ leader 2 is sending 2024-03-01 15:08:59.545296 -0500 EST m=+2.395303751
+ leader 2 is sending 2024-03-01 15:08:59.646509 -0500 EST m=+2.496515751
+ current server0 status1
+current server1 status1
+current server2 status3
+leader 2 is sending 2024-03-01 15:08:59.746861 -0500 EST m=+2.596866876
+ leader 2 is sending 2024-03-01 15:08:59.847539 -0500 EST m=+2.697543959
+ leader 2 is sending 2024-03-01 15:08:59.949381 -0500 EST m=+2.799386292
+ leader 2 is sending 2024-03-01 15:09:00.050522 -0500 EST m=+2.900525667
+ leader 2 is sending 2024-03-01 15:09:00.151989 -0500 EST m=+3.001991834
+ current server0 status1
+current server1 status1
+current server2 status3
+  ... Passed --   3.0  3   58    6354    0
 Test (3A): election after network failure ...
---- FAIL: TestReElection3A (5.15s)
-    config.go:454: expected one leader, got none
+server 0 starts election
+server: 2 term:2 Voted: 0
+server:0 Term:2 is leader
+ server: 1 term:2 Voted: 0
+leader 0 is sending 2024-03-01 15:09:00.441371 -0500 EST m=+3.291371876
+ leader 0 is sending 2024-03-01 15:09:00.542542 -0500 EST m=+3.392541709
+ leader 0 is sending 2024-03-01 15:09:00.643149 -0500 EST m=+3.493147334
+ current server0 status3
+current server1 status1
+current server2 status1
+leader 0 is sending 2024-03-01 15:09:00.749976 -0500 EST m=+3.599973751
+ server 2 starts election
+server: 1 term:3 Voted: 2
+server:2 Term:3 is leader
+ leader 2 is sending 2024-03-01 15:09:00.849732 -0500 EST m=+3.699728876
+ leader 0 is sending 2024-03-01 15:09:00.850079 -0500 EST m=+3.700075751
+ leader 0 is sending 2024-03-01 15:09:00.951088 -0500 EST m=+3.801084251
+ leader 2 is sending 2024-03-01 15:09:00.951273 -0500 EST m=+3.801269001
+ leader 0 is sending 2024-03-01 15:09:01.051339 -0500 EST m=+3.901334584
+ leader 2 is sending 2024-03-01 15:09:01.051332 -0500 EST m=+3.901327542
+ leader 2 is sending 2024-03-01 15:09:01.15246 -0500 EST m=+4.002454334
+ leader 0 is sending 2024-03-01 15:09:01.152523 -0500 EST m=+4.002517667
+ current server1 status1
+current server2 status3
+leader 0 is sending 2024-03-01 15:09:01.253532 -0500 EST m=+4.103525417
+ leader 2 is sending 2024-03-01 15:09:01.253599 -0500 EST m=+4.103592751
+ leader 2 is sending 2024-03-01 15:09:01.354689 -0500 EST m=+4.204681917
+ leader 2 is sending 2024-03-01 15:09:01.455902 -0500 EST m=+4.305893584
+ leader 2 is sending 2024-03-01 15:09:01.557067 -0500 EST m=+4.407058376
+ current server0 status1
+current server1 status1
+current server2 status3
+leader 2 is sending 2024-03-01 15:09:01.658282 -0500 EST m=+4.508272417
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:01.75896 -0500 EST m=+4.608949251
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:01.860575 -0500 EST m=+4.710564251
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:01.961385 -0500 EST m=+4.811372667
+ leader 2 is sending 2024-03-01 15:09:02.062248 -0500 EST m=+4.912234792
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:02.163405 -0500 EST m=+5.013390792
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:02.264484 -0500 EST m=+5.114469334
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:02.369154 -0500 EST m=+5.219137792
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:02.469456 -0500 EST m=+5.319439501
+ server 0 starts election
+server 1 starts election
+leader 2 is sending 2024-03-01 15:09:02.570565 -0500 EST m=+5.420548084
+ leader 2 is sending 2024-03-01 15:09:02.671752 -0500 EST m=+5.521733376
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:02.77573 -0500 EST m=+5.625711292
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:02.876028 -0500 EST m=+5.726008292
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:02.976718 -0500 EST m=+5.826697334
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:03.077858 -0500 EST m=+5.927836209
+ server 1 starts election
+server 0 starts election
+leader 2 is sending 2024-03-01 15:09:03.179119 -0500 EST m=+6.029096501
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:03.28034 -0500 EST m=+6.130317167
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:03.3816 -0500 EST m=+6.231576084
+ server 1 starts election
+leader 2 is sending 2024-03-01 15:09:03.484088 -0500 EST m=+6.334063251
+ server 0 starts election
+leader 2 is sending 2024-03-01 15:09:03.586924 -0500 EST m=+6.436898792
+ current server1 status2
+server 0 starts election
+server: 1 term:14 Voted: 0
+server:0 Term:14 is leader
+ leader 2 is sending 2024-03-01 15:09:03.688596 -0500 EST m=+6.538569792
+ leader 0 is sending 2024-03-01 15:09:03.742445 -0500 EST m=+6.592418126
+ leader 2 is sending 2024-03-01 15:09:03.789035 -0500 EST m=+6.639007251
+ leader 0 is sending 2024-03-01 15:09:03.843428 -0500 EST m=+6.693400667
+ leader 2 is sending 2024-03-01 15:09:03.889365 -0500 EST m=+6.739336501
+ leader 0 is sending 2024-03-01 15:09:03.943983 -0500 EST m=+6.793954417
+ leader 2 is sending 2024-03-01 15:09:03.991567 -0500 EST m=+6.841538167
+ leader 0 is sending 2024-03-01 15:09:04.045031 -0500 EST m=+6.895001167
+ current server0 status3
+current server1 status1
+leader 2 is sending 2024-03-01 15:09:04.091752 -0500 EST m=+6.941722459
+ leader 0 is sending 2024-03-01 15:09:04.145996 -0500 EST m=+6.995965459
+ leader 0 is sending 2024-03-01 15:09:04.247348 -0500 EST m=+7.097316209
+ leader 0 is sending 2024-03-01 15:09:04.347782 -0500 EST m=+7.197749917
+ leader 0 is sending 2024-03-01 15:09:04.448832 -0500 EST m=+7.298798626
+ leader 0 is sending 2024-03-01 15:09:04.55007 -0500 EST m=+7.400036417
+ current server0 status3
+current server1 status1
+current server2 status1
+  ... Passed --   4.4  3  146    9910    0
 Test (3A): multiple elections ...
---- FAIL: TestManyElections3A (5.04s)
-    config.go:454: expected one leader, got none
+server 3 starts election
+server: 4 term:2 Voted: 3
+server: 6 term:2 Voted: 3
+server: 2 term:2 Voted: 3
+server:3 Term:2 is leader
+ server: 5 term:2 Voted: 3
+server: 0 term:2 Voted: 3
+server: 1 term:2 Voted: 3
+leader 3 is sending 2024-03-01 15:09:04.834875 -0500 EST m=+7.684839209
+ leader 3 is sending 2024-03-01 15:09:04.935193 -0500 EST m=+7.785156167
+ leader 3 is sending 2024-03-01 15:09:05.036595 -0500 EST m=+7.886556542
+ current server0 status1
+current server1 status1
+current server2 status1
+current server3 status3
+current server4 status1
+current server5 status1
+current server6 status1
+leader 3 is sending 2024-03-01 15:09:05.137762 -0500 EST m=+7.987722709
+ server 1 starts election
+server 4 starts election
+leader 3 is sending 2024-03-01 15:09:05.241644 -0500 EST m=+8.091603959
+ server 6 starts election
+leader 3 is sending 2024-03-01 15:09:05.342849 -0500 EST m=+8.192808334
+ server 4 starts election
+server 1 starts election
+leader 3 is sending 2024-03-01 15:09:05.444247 -0500 EST m=+8.294205917
+ server 6 starts election
+leader 3 is sending 2024-03-01 15:09:05.544674 -0500 EST m=+8.394631959
+ current server0 status1
+current server2 status1
+current server3 status3
+current server5 status1
+leader 3 is sending 2024-03-01 15:09:05.646011 -0500 EST m=+8.495968292
+ server 4 starts election
+server: 6 term:5 Voted: 4
+server: 0 term:5 Voted: 4
+server: 5 term:5 Voted: 4
+server:4 Term:5 is leader
+ server 1 starts election
+leader 3 is sending 2024-03-01 15:09:05.746856 -0500 EST m=+8.596812167
+ leader 4 is sending 2024-03-01 15:09:05.835422 -0500 EST m=+8.685377876
+ server 1 starts election
+leader 3 is sending 2024-03-01 15:09:05.847376 -0500 EST m=+8.697331001
+ server 2 starts election
+leader 4 is sending 2024-03-01 15:09:05.936062 -0500 EST m=+8.786016292
+ leader 3 is sending 2024-03-01 15:09:05.948571 -0500 EST m=+8.798525959
+ server 2 starts election
+server 1 starts election
+leader 4 is sending 2024-03-01 15:09:06.037429 -0500 EST m=+8.887382709
+ leader 3 is sending 2024-03-01 15:09:06.050183 -0500 EST m=+8.900136209
+ server 1 starts election
+leader 4 is sending 2024-03-01 15:09:06.137829 -0500 EST m=+8.987781376
+ leader 3 is sending 2024-03-01 15:09:06.151348 -0500 EST m=+9.001300626
+ current server0 status1
+current server4 status3
+current server5 status1
+current server6 status1
+leader 4 is sending 2024-03-01 15:09:06.238979 -0500 EST m=+9.088930667
+ leader 3 is sending 2024-03-01 15:09:06.252397 -0500 EST m=+9.102348667
+ leader 4 is sending 2024-03-01 15:09:06.339748 -0500 EST m=+9.189699042
+ leader 3 is sending 2024-03-01 15:09:06.352756 -0500 EST m=+9.202706542
+ server 5 starts election
+server 1 starts election
+server: 6 term:9 Voted: 1
+server: 4 term:9 Voted: 1
+server: 2 term:9 Voted: 1
+server:1 Term:9 is leader
+ server 0 starts election
+leader 3 is sending 2024-03-01 15:09:06.453028 -0500 EST m=+9.302977584
+ leader 1 is sending 2024-03-01 15:09:06.476615 -0500 EST m=+9.326565042
+ leader 3 is sending 2024-03-01 15:09:06.553817 -0500 EST m=+9.403766167
+ leader 1 is sending 2024-03-01 15:09:06.577807 -0500 EST m=+9.427755751
+ server 0 starts election
+leader 3 is sending 2024-03-01 15:09:06.654555 -0500 EST m=+9.504504209
+ leader 1 is sending 2024-03-01 15:09:06.678696 -0500 EST m=+9.528644709
+ server 5 starts election
+current server1 status3
+current server2 status1
+current server4 status1
+current server6 status1
+server 0 starts election
+leader 3 is sending 2024-03-01 15:09:06.755197 -0500 EST m=+9.605144459
+ leader 1 is sending 2024-03-01 15:09:06.779842 -0500 EST m=+9.629788834
+ leader 1 is sending 2024-03-01 15:09:06.880974 -0500 EST m=+9.730920667
+ server 4 starts election
+leader 1 is sending 2024-03-01 15:09:06.981252 -0500 EST m=+9.831197751
+ leader 1 is sending 2024-03-01 15:09:07.082669 -0500 EST m=+9.932613667
+ server 0 starts election
+current server1 status3
+current server2 status1
+current server3 status1
+current server5 status1
+current server6 status1
+leader 1 is sending 2024-03-01 15:09:07.1839 -0500 EST m=+10.033843667
+ server 4 starts election
+server: 6 term:11 Voted: 4
+server: 1 term:11 Voted: 4
+server: 2 term:11 Voted: 4
+server:4 Term:11 is leader
+ server 5 starts election
+leader 4 is sending 2024-03-01 15:09:07.305411 -0500 EST m=+10.155354709
+ server 3 starts election
+server 0 starts election
+leader 4 is sending 2024-03-01 15:09:07.406598 -0500 EST m=+10.256540417
+ server 3 starts election
+leader 4 is sending 2024-03-01 15:09:07.507011 -0500 EST m=+10.356952376
+ server 0 starts election
+server 3 starts election
+server 5 starts election
+leader 4 is sending 2024-03-01 15:09:07.607942 -0500 EST m=+10.457882334
+ current server1 status1
+current server2 status1
+current server4 status3
+current server6 status1
+server 0 starts election
+server: 1 term:12 Voted: 0
+server: 2 term:12 Voted: 0
+server: 4 term:12 Voted: 0
+server:0 Term:12 is leader
+ server 3 starts election
+server 5 starts election
+leader 0 is sending 2024-03-01 15:09:07.741532 -0500 EST m=+10.591471251
+ server 3 starts election
+leader 0 is sending 2024-03-01 15:09:07.843034 -0500 EST m=+10.692972334
+ server 5 starts election
+server 6 starts election
+leader 0 is sending 2024-03-01 15:09:07.943373 -0500 EST m=+10.793310709
+ leader 0 is sending 2024-03-01 15:09:08.0447 -0500 EST m=+10.894636667
+ leader 0 is sending 2024-03-01 15:09:08.145788 -0500 EST m=+10.995724417
+ server 3 starts election
+server 5 starts election
+current server0 status3
+current server1 status1
+current server2 status1
+current server4 status1
+server 6 starts election
+server: 1 term:13 Voted: 6
+server: 4 term:13 Voted: 6
+leader 0 is sending 2024-03-01 15:09:08.248189 -0500 EST m=+11.098124292
+ server 5 starts election
+server: 1 term:15 Voted: 5
+server: 4 term:15 Voted: 5
+server: 6 term:15 Voted: 5
+server:5 Term:15 is leader
+ server 2 starts election
+leader 0 is sending 2024-03-01 15:09:08.348879 -0500 EST m=+11.198813126
+ leader 5 is sending 2024-03-01 15:09:08.412456 -0500 EST m=+11.262389667
+ leader 0 is sending 2024-03-01 15:09:08.449808 -0500 EST m=+11.299742126
+ server 3 starts election
+leader 5 is sending 2024-03-01 15:09:08.513656 -0500 EST m=+11.363588626
+ leader 0 is sending 2024-03-01 15:09:08.550194 -0500 EST m=+11.400129167
+ leader 5 is sending 2024-03-01 15:09:08.614805 -0500 EST m=+11.464737084
+ server 2 starts election
+leader 0 is sending 2024-03-01 15:09:08.650616 -0500 EST m=+11.500548084
+ current server1 status1
+current server4 status1
+current server5 status3
+current server6 status1
+leader 5 is sending 2024-03-01 15:09:08.715148 -0500 EST m=+11.565079292
+ leader 0 is sending 2024-03-01 15:09:08.751366 -0500 EST m=+11.601297584
+ server 1 starts election
+leader 5 is sending 2024-03-01 15:09:08.816296 -0500 EST m=+11.666226292
+ server 3 starts election
+server: 6 term:17 Voted: 3
+server: 4 term:17 Voted: 3
+server: 5 term:17 Voted: 3
+server:3 Term:17 is leader
+ leader 0 is sending 2024-03-01 15:09:08.852482 -0500 EST m=+11.702412042
+ leader 3 is sending 2024-03-01 15:09:08.864578 -0500 EST m=+11.714508042
+ server 1 starts election
+server 2 starts election
+leader 0 is sending 2024-03-01 15:09:08.95284 -0500 EST m=+11.802769959
+ leader 3 is sending 2024-03-01 15:09:08.964994 -0500 EST m=+11.814922542
+ server 1 starts election
+leader 0 is sending 2024-03-01 15:09:09.054029 -0500 EST m=+11.903957042
+ server 2 starts election
+leader 3 is sending 2024-03-01 15:09:09.065702 -0500 EST m=+11.915630334
+ current server3 status3
+current server4 status1
+current server5 status1
+current server6 status1
+leader 0 is sending 2024-03-01 15:09:09.154268 -0500 EST m=+12.004195626
+ leader 3 is sending 2024-03-01 15:09:09.165979 -0500 EST m=+12.015906626
+ server 2 starts election
+leader 3 is sending 2024-03-01 15:09:09.266601 -0500 EST m=+12.116527501
+ server 5 starts election
+server 1 starts election
+server: 6 term:19 Voted: 1
+server: 3 term:19 Voted: 1
+server: 0 term:19 Voted: 1
+server:1 Term:19 is leader
+ leader 1 is sending 2024-03-01 15:09:09.358098 -0500 EST m=+12.208024334
+ server 4 starts election
+server 5 starts election
+leader 1 is sending 2024-03-01 15:09:09.459326 -0500 EST m=+12.309250876
+ server 5 starts election
+server 2 starts election
+server 4 starts election
+leader 1 is sending 2024-03-01 15:09:09.56067 -0500 EST m=+12.410593959
+ leader 1 is sending 2024-03-01 15:09:09.660969 -0500 EST m=+12.510891917
+ current server0 status1
+current server1 status3
+current server3 status1
+current server6 status1
+server 2 starts election
+server: 3 term:19 Voted: 2
+server: 6 term:19 Voted: 2
+server: 0 term:19 Voted: 2
+server:2 Term:19 is leader
+ leader 2 is sending 2024-03-01 15:09:09.678172 -0500 EST m=+12.528095376
+ server 5 starts election
+server: 6 term:21 Voted: 5
+server: 0 term:21 Voted: 5
+server: 3 term:21 Voted: 5
+server:5 Term:21 is leader
+ server: 1 term:21 Voted: 5
+server: 4 term:21 Voted: 5
+server: 2 term:21 Voted: 5
+leader 5 is sending 2024-03-01 15:09:09.718251 -0500 EST m=+12.568173751
+ leader 5 is sending 2024-03-01 15:09:09.818674 -0500 EST m=+12.668596459
+ leader 5 is sending 2024-03-01 15:09:09.919846 -0500 EST m=+12.769767167
+ leader 5 is sending 2024-03-01 15:09:10.020114 -0500 EST m=+12.870035084
+ leader 5 is sending 2024-03-01 15:09:10.12131 -0500 EST m=+12.971229334
+ current server0 status1
+current server1 status1
+current server2 status1
+current server3 status1
+current server4 status1
+current server5 status3
+current server6 status1
+  ... Passed --   5.6  7  792   56586    0
 Test (3B): basic agreement ...
-signal: interrupt
-FAIL	6.5840/raft	17.031s
+server 2 starts election
+server: 0 term:2 Voted: 2
+server:2 Term:2 is leader
+ server: 1 term:2 Voted: 2
+leader 2 is sending 2024-03-01 15:09:10.405731 -0500 EST m=+13.255648709
+ leader 2 is sending 2024-03-01 15:09:10.505966 -0500 EST m=+13.355882667
+ leader 2 is sending 2024-03-01 15:09:10.607141 -0500 EST m=+13.457056001
+ leader 2 is sending 2024-03-01 15:09:10.708326 -0500 EST m=+13.558240084
+ leader 2 is sending 2024-03-01 15:09:10.808734 -0500 EST m=+13.658647542
+ leader 2 is sending 2024-03-01 15:09:10.909083 -0500 EST m=+13.758995834
+ leader 2 is sending 2024-03-01 15:09:11.015339 -0500 EST m=+13.865251001
+ leader 2 is sending 2024-03-01 15:09:11.117203 -0500 EST m=+13.967114376
+ leader 2 is sending 2024-03-01 15:09:11.217821 -0500 EST m=+14.067731251
+ leader 2 is sending 2024-03-01 15:09:11.318954 -0500 EST m=+14.168863001
+ leader 2 is sending 2024-03-01 15:09:11.419134 -0500 EST m=+14.269042459
+ leader 2 is sending 2024-03-01 15:09:11.519452 -0500 EST m=+14.369360042
+ leader 2 is sending 2024-03-01 15:09:11.619963 -0500 EST m=+14.469870042
+ leader 2 is sending 2024-03-01 15:09:11.720137 -0500 EST m=+14.570043126
+ leader 2 is sending 2024-03-01 15:09:11.821757 -0500 EST m=+14.671662584
+ leader 2 is sending 2024-03-01 15:09:11.923109 -0500 EST m=+14.773013459
+ leader 2 is sending 2024-03-01 15:09:12.024426 -0500 EST m=+14.874329417
+ leader 2 is sending 2024-03-01 15:09:12.125608 -0500 EST m=+14.975510542
+ leader 2 is sending 2024-03-01 15:09:12.225805 -0500 EST m=+15.075706709
+ leader 2 is sending 2024-03-01 15:09:12.326982 -0500 EST m=+15.176882667
+ leader 2 is sending 2024-03-01 15:09:12.428183 -0500 EST m=+15.278083417
+ leader 2 is sending 2024-03-01 15:09:12.52937 -0500 EST m=+15.379269709
+ leader 2 is sending 2024-03-01 15:09:12.630697 -0500 EST m=+15.480595501
+ leader 2 is sending 2024-03-01 15:09:12.731458 -0500 EST m=+15.581355167
+ leader 2 is sending 2024-03-01 15:09:12.833146 -0500 EST m=+15.683042626
+ leader 2 is sending 2024-03-01 15:09:12.934307 -0500 EST m=+15.784203167
+ leader 2 is sending 2024-03-01 15:09:13.036912 -0500 EST m=+15.886807126
+ leader 2 is sending 2024-03-01 15:09:13.13757 -0500 EST m=+15.987464292
+ leader 2 is sending 2024-03-01 15:09:13.237981 -0500 EST m=+16.087873917
+ leader 2 is sending 2024-03-01 15:09:13.338967 -0500 EST m=+16.188859001
+ leader 2 is sending 2024-03-01 15:09:13.439826 -0500 EST m=+16.289717251
+ leader 2 is sending 2024-03-01 15:09:13.540264 -0500 EST m=+16.390155084
+ leader 2 is sending 2024-03-01 15:09:13.64103 -0500 EST m=+16.490920084
+ leader 2 is sending 2024-03-01 15:09:13.74157 -0500 EST m=+16.591459292
+ leader 2 is sending 2024-03-01 15:09:13.842379 -0500 EST m=+16.692267542
+ leader 2 is sending 2024-03-01 15:09:13.942633 -0500 EST m=+16.792520959
+ leader 2 is sending 2024-03-01 15:09:14.042972 -0500 EST m=+16.892858501
+ leader 2 is sending 2024-03-01 15:09:14.14373 -0500 EST m=+16.993621917
+ leader 2 is sending 2024-03-01 15:09:14.245264 -0500 EST m=+17.095149209
+ leader 2 is sending 2024-03-01 15:09:14.346094 -0500 EST m=+17.195977501
+ leader 2 is sending 2024-03-01 15:09:14.447961 -0500 EST m=+17.297844584
+ leader 2 is sending 2024-03-01 15:09:14.548735 -0500 EST m=+17.398616709
+ leader 2 is sending 2024-03-01 15:09:14.650024 -0500 EST m=+17.499906209
+ leader 2 is sending 2024-03-01 15:09:14.751158 -0500 EST m=+17.601038126
+ leader 2 is sending 2024-03-01 15:09:14.852713 -0500 EST m=+17.702592834
+ leader 2 is sending 2024-03-01 15:09:14.953535 -0500 EST m=+17.803414001
+ leader 2 is sending 2024-03-01 15:09:15.054903 -0500 EST m=+17.904781126
+ leader 2 is sending 2024-03-01 15:09:15.156308 -0500 EST m=+18.006185251
+ leader 2 is sending 2024-03-01 15:09:15.256862 -0500 EST m=+18.106739084
+ leader 2 is sending 2024-03-01 15:09:15.358256 -0500 EST m=+18.208131126
+ leader 2 is sending 2024-03-01 15:09:15.459873 -0500 EST m=+18.309747917
+ leader 2 is sending 2024-03-01 15:09:15.560535 -0500 EST m=+18.410408876
+ leader 2 is sending 2024-03-01 15:09:15.660767 -0500 EST m=+18.510640251
+ leader 2 is sending 2024-03-01 15:09:15.761807 -0500 EST m=+18.611679334
+ leader 2 is sending 2024-03-01 15:09:15.862194 -0500 EST m=+18.712065334
+ leader 2 is sending 2024-03-01 15:09:15.963427 -0500 EST m=+18.813297459
+ leader 2 is sending 2024-03-01 15:09:16.065439 -0500 EST m=+18.915308876
+ leader 2 is sending 2024-03-01 15:09:16.166747 -0500 EST m=+19.016615709
+ leader 2 is sending 2024-03-01 15:09:16.269167 -0500 EST m=+19.119034709
+ leader 2 is sending 2024-03-01 15:09:16.37061 -0500 EST m=+19.220476501
+ leader 2 is sending 2024-03-01 15:09:16.471856 -0500 EST m=+19.321722042
+ leader 2 is sending 2024-03-01 15:09:16.573193 -0500 EST m=+19.423058626
+ leader 2 is sending 2024-03-01 15:09:16.675018 -0500 EST m=+19.524882209
+ leader 2 is sending 2024-03-01 15:09:16.776273 -0500 EST m=+19.626138001
+ leader 2 is sending 2024-03-01 15:09:16.877921 -0500 EST m=+19.727783667
+ leader 2 is sending 2024-03-01 15:09:16.979277 -0500 EST m=+19.829138667
+ leader 2 is sending 2024-03-01 15:09:17.080308 -0500 EST m=+19.930169167
+ leader 2 is sending 2024-03-01 15:09:17.180806 -0500 EST m=+20.030666917
+ leader 2 is sending 2024-03-01 15:09:17.282401 -0500 EST m=+20.132261959
+ leader 2 is sending 2024-03-01 15:09:17.384349 -0500 EST m=+20.234207584
+ leader 2 is sending 2024-03-01 15:09:17.485823 -0500 EST m=+20.335680834
+ leader 2 is sending 2024-03-01 15:09:17.587133 -0500 EST m=+20.436989459
+ leader 2 is sending 2024-03-01 15:09:17.688193 -0500 EST m=+20.538049292
+ leader 2 is sending 2024-03-01 15:09:17.789508 -0500 EST m=+20.639363626
+ leader 2 is sending 2024-03-01 15:09:17.891058 -0500 EST m=+20.740912751
+ leader 2 is sending 2024-03-01 15:09:17.992609 -0500 EST m=+20.842462001
+ leader 2 is sending 2024-03-01 15:09:18.094198 -0500 EST m=+20.944050376
+ leader 2 is sending 2024-03-01 15:09:18.195773 -0500 EST m=+21.045624751
+ leader 2 is sending 2024-03-01 15:09:18.297582 -0500 EST m=+21.147432501
+ leader 2 is sending 2024-03-01 15:09:18.398952 -0500 EST m=+21.248802459
+ leader 2 is sending 2024-03-01 15:09:18.50049 -0500 EST m=+21.350339167
+ leader 2 is sending 2024-03-01 15:09:18.601925 -0500 EST m=+21.451773209
+ leader 2 is sending 2024-03-01 15:09:18.703033 -0500 EST m=+21.552880751
+ leader 2 is sending 2024-03-01 15:09:18.803676 -0500 EST m=+21.653522542
+ leader 2 is sending 2024-03-01 15:09:18.905086 -0500 EST m=+21.754931542
+ leader 2 is sending 2024-03-01 15:09:19.006344 -0500 EST m=+21.856189292
+ leader 2 is sending 2024-03-01 15:09:19.108013 -0500 EST m=+21.957857209
+ leader 2 is sending 2024-03-01 15:09:19.210052 -0500 EST m=+22.059895501
+ leader 2 is sending 2024-03-01 15:09:19.311386 -0500 EST m=+22.161229959
+ leader 2 is sending 2024-03-01 15:09:19.413343 -0500 EST m=+22.263184251
+ leader 2 is sending 2024-03-01 15:09:19.515014 -0500 EST m=+22.364854751
+ leader 2 is sending 2024-03-01 15:09:19.616265 -0500 EST m=+22.466105334
+ leader 2 is sending 2024-03-01 15:09:19.71665 -0500 EST m=+22.566488667
+ leader 2 is sending 2024-03-01 15:09:19.817743 -0500 EST m=+22.667581001
+ leader 2 is sending 2024-03-01 15:09:19.918997 -0500 EST m=+22.768834292
+ leader 2 is sending 2024-03-01 15:09:20.020386 -0500 EST m=+22.870222417
+ leader 2 is sending 2024-03-01 15:09:20.123358 -0500 EST m=+22.973193334
+ --- FAIL: TestBasicAgree3B (10.05s)
+    config.go:601: one(100) failed to reach agreement
+Test (3B): RPC byte count ...
+server 0 starts election
+server 1 starts election
+server: 2 term:2 Voted: 1
+server:1 Term:2 is leader
+ leader 1 is sending 2024-03-01 15:09:20.464238 -0500 EST m=+23.314070792
+ leader 1 is sending 2024-03-01 15:09:20.566079 -0500 EST m=+23.415911167
+ leader 1 is sending 2024-03-01 15:09:20.670028 -0500 EST m=+23.519859126
+ leader 1 is sending 2024-03-01 15:09:20.77147 -0500 EST m=+23.621299751
+ leader 1 is sending 2024-03-01 15:09:20.873277 -0500 EST m=+23.723106251
+ leader 1 is sending 2024-03-01 15:09:20.97487 -0500 EST m=+23.824698209
+ leader 1 is sending 2024-03-01 15:09:21.075769 -0500 EST m=+23.925597876
+ leader 1 is sending 2024-03-01 15:09:21.177748 -0500 EST m=+24.027574876
+ leader 1 is sending 2024-03-01 15:09:21.279116 -0500 EST m=+24.128942376
+ leader 1 is sending 2024-03-01 15:09:21.379437 -0500 EST m=+24.229262417
+ leader 1 is sending 2024-03-01 15:09:21.480765 -0500 EST m=+24.330589334
+ leader 1 is sending 2024-03-01 15:09:21.581888 -0500 EST m=+24.431711626
+ leader 1 is sending 2024-03-01 15:09:21.683033 -0500 EST m=+24.532855001
+ leader 1 is sending 2024-03-01 15:09:21.784994 -0500 EST m=+24.634816042
+ leader 1 is sending 2024-03-01 15:09:21.88623 -0500 EST m=+24.736050667
+ leader 1 is sending 2024-03-01 15:09:21.987468 -0500 EST m=+24.837288334
+ leader 1 is sending 2024-03-01 15:09:22.08917 -0500 EST m=+24.938989251
+ leader 1 is sending 2024-03-01 15:09:22.190388 -0500 EST m=+25.040205834
+ leader 1 is sending 2024-03-01 15:09:22.291397 -0500 EST m=+25.141214084
+ leader 1 is sending 2024-03-01 15:09:22.394017 -0500 EST m=+25.243833459
+ leader 1 is sending 2024-03-01 15:09:22.494678 -0500 EST m=+25.344494084
+ leader 1 is sending 2024-03-01 15:09:22.597044 -0500 EST m=+25.446858876
+ leader 1 is sending 2024-03-01 15:09:22.698432 -0500 EST m=+25.548245751
+ leader 1 is sending 2024-03-01 15:09:22.79958 -0500 EST m=+25.649393209
+ leader 1 is sending 2024-03-01 15:09:22.900177 -0500 EST m=+25.749990667
+ leader 1 is sending 2024-03-01 15:09:23.001519 -0500 EST m=+25.851330084
+ leader 1 is sending 2024-03-01 15:09:23.10561 -0500 EST m=+25.955420459
+ leader 1 is sending 2024-03-01 15:09:23.20746 -0500 EST m=+26.057270126
+ leader 1 is sending 2024-03-01 15:09:23.307617 -0500 EST m=+26.157426667
+ leader 1 is sending 2024-03-01 15:09:23.410249 -0500 EST m=+26.260057376
+ leader 1 is sending 2024-03-01 15:09:23.511653 -0500 EST m=+26.361460709
+ leader 1 is sending 2024-03-01 15:09:23.612763 -0500 EST m=+26.462589209
+ leader 1 is sending 2024-03-01 15:09:23.713731 -0500 EST m=+26.563537001
+ leader 1 is sending 2024-03-01 15:09:23.814601 -0500 EST m=+26.664405584
+ leader 1 is sending 2024-03-01 15:09:23.916711 -0500 EST m=+26.766514584
+ leader 1 is sending 2024-03-01 15:09:24.017616 -0500 EST m=+26.867418501
+ leader 1 is sending 2024-03-01 15:09:24.11827 -0500 EST m=+26.968072084
+ leader 1 is sending 2024-03-01 15:09:24.220126 -0500 EST m=+27.069927334
+ leader 1 is sending 2024-03-01 15:09:24.321473 -0500 EST m=+27.171273251
+ leader 1 is sending 2024-03-01 15:09:24.422058 -0500 EST m=+27.271857542
+ leader 1 is sending 2024-03-01 15:09:24.522482 -0500 EST m=+27.372281876
+ leader 1 is sending 2024-03-01 15:09:24.624005 -0500 EST m=+27.473802834
+ leader 1 is sending 2024-03-01 15:09:24.725463 -0500 EST m=+27.575260459
+ leader 1 is sending 2024-03-01 15:09:24.826737 -0500 EST m=+27.676533417
+ leader 1 is sending 2024-03-01 15:09:24.927496 -0500 EST m=+27.777292667
+ leader 1 is sending 2024-03-01 15:09:25.028917 -0500 EST m=+27.878711251
+ leader 1 is sending 2024-03-01 15:09:25.130123 -0500 EST m=+27.979916334
+ leader 1 is sending 2024-03-01 15:09:25.231289 -0500 EST m=+28.081082001
+ leader 1 is sending 2024-03-01 15:09:25.332327 -0500 EST m=+28.182118959
+ leader 1 is sending 2024-03-01 15:09:25.433861 -0500 EST m=+28.283651542
+ leader 1 is sending 2024-03-01 15:09:25.534008 -0500 EST m=+28.383798876
+ leader 1 is sending 2024-03-01 15:09:25.63776 -0500 EST m=+28.487549292
+ leader 1 is sending 2024-03-01 15:09:25.738158 -0500 EST m=+28.587946584
+ leader 1 is sending 2024-03-01 15:09:25.83908 -0500 EST m=+28.688868084
+ leader 1 is sending 2024-03-01 15:09:25.940273 -0500 EST m=+28.790060251
+ leader 1 is sending 2024-03-01 15:09:26.041381 -0500 EST m=+28.891170542
+ leader 1 is sending 2024-03-01 15:09:26.142031 -0500 EST m=+28.991815751
+ leader 1 is sending 2024-03-01 15:09:26.242223 -0500 EST m=+29.092007751
+ leader 1 is sending 2024-03-01 15:09:26.342459 -0500 EST m=+29.192243042
+ leader 1 is sending 2024-03-01 15:09:26.443702 -0500 EST m=+29.293484834
+ leader 1 is sending 2024-03-01 15:09:26.544969 -0500 EST m=+29.394750542
+ leader 1 is sending 2024-03-01 15:09:26.646828 -0500 EST m=+29.496608501
+ leader 1 is sending 2024-03-01 15:09:26.747556 -0500 EST m=+29.597335709
+ leader 1 is sending 2024-03-01 15:09:26.847959 -0500 EST m=+29.697738251
+ leader 1 is sending 2024-03-01 15:09:26.94934 -0500 EST m=+29.799118917
+ leader 1 is sending 2024-03-01 15:09:27.050538 -0500 EST m=+29.900315542
+ leader 1 is sending 2024-03-01 15:09:27.151246 -0500 EST m=+30.001023126
+ leader 1 is sending 2024-03-01 15:09:27.252375 -0500 EST m=+30.102150834
+ leader 1 is sending 2024-03-01 15:09:27.353014 -0500 EST m=+30.202789459
+ leader 1 is sending 2024-03-01 15:09:27.4542 -0500 EST m=+30.303974167
+ leader 1 is sending 2024-03-01 15:09:27.555414 -0500 EST m=+30.405187001
+ leader 1 is sending 2024-03-01 15:09:27.65669 -0500 EST m=+30.506462084
+ leader 1 is sending 2024-03-01 15:09:27.757949 -0500 EST m=+30.607720542
+ leader 1 is sending 2024-03-01 15:09:27.859121 -0500 EST m=+30.708891667
+ leader 1 is sending 2024-03-01 15:09:27.960294 -0500 EST m=+30.810064292
+ leader 1 is sending 2024-03-01 15:09:28.061529 -0500 EST m=+30.911298167
+ leader 1 is sending 2024-03-01 15:09:28.163783 -0500 EST m=+31.013622459
+ leader 1 is sending 2024-03-01 15:09:28.26506 -0500 EST m=+31.114827834
+ leader 1 is sending 2024-03-01 15:09:28.366233 -0500 EST m=+31.215999209
+ leader 1 is sending 2024-03-01 15:09:28.467415 -0500 EST m=+31.317180751
+ leader 1 is sending 2024-03-01 15:09:28.56888 -0500 EST m=+31.418645376
+ leader 1 is sending 2024-03-01 15:09:28.670311 -0500 EST m=+31.520075501
+ leader 1 is sending 2024-03-01 15:09:28.771549 -0500 EST m=+31.621312376
+ leader 1 is sending 2024-03-01 15:09:28.872371 -0500 EST m=+31.722133459
+ leader 1 is sending 2024-03-01 15:09:28.973535 -0500 EST m=+31.823296167
+ leader 1 is sending 2024-03-01 15:09:29.074455 -0500 EST m=+31.924215334
+ leader 1 is sending 2024-03-01 15:09:29.175771 -0500 EST m=+32.025530917
+ leader 1 is sending 2024-03-01 15:09:29.283881 -0500 EST m=+32.133639334
+ leader 1 is sending 2024-03-01 15:09:29.38511 -0500 EST m=+32.234867792
+ leader 1 is sending 2024-03-01 15:09:29.486664 -0500 EST m=+32.336421251
+ leader 1 is sending 2024-03-01 15:09:29.587805 -0500 EST m=+32.437561667
+ leader 1 is sending 2024-03-01 15:09:29.689009 -0500 EST m=+32.538764459
+ leader 1 is sending 2024-03-01 15:09:29.789887 -0500 EST m=+32.639641667
+ leader 1 is sending 2024-03-01 15:09:29.891355 -0500 EST m=+32.741108709
+ leader 1 is sending 2024-03-01 15:09:29.994406 -0500 EST m=+32.844158834
+ leader 1 is sending 2024-03-01 15:09:30.09655 -0500 EST m=+32.946302042
+ leader 1 is sending 2024-03-01 15:09:30.197724 -0500 EST m=+33.047474834
+ --- FAIL: TestRPCBytes3B (10.04s)
+    config.go:601: one(99) failed to reach agreement
+Test (3B): test progressive failure of followers ...
+server 2 starts election
+server: 1 term:2 Voted: 2
+server:2 Term:2 is leader
+ server: 0 term:2 Voted: 2
+leader 2 is sending 2024-03-01 15:09:30.491646 -0500 EST m=+33.341395292
+ leader 2 is sending 2024-03-01 15:09:30.596024 -0500 EST m=+33.445772209
+ leader 2 is sending 2024-03-01 15:09:30.700575 -0500 EST m=+33.550321876
+ leader 2 is sending 2024-03-01 15:09:30.800773 -0500 EST m=+33.650519417
+ leader 2 is sending 2024-03-01 15:09:30.901506 -0500 EST m=+33.751250751
+ leader 2 is sending 2024-03-01 15:09:31.001897 -0500 EST m=+33.851641626
+ leader 2 is sending 2024-03-01 15:09:31.103315 -0500 EST m=+33.953058584
+ leader 2 is sending 2024-03-01 15:09:31.207185 -0500 EST m=+34.056927334
+ leader 2 is sending 2024-03-01 15:09:31.309484 -0500 EST m=+34.159226376
+ leader 2 is sending 2024-03-01 15:09:31.410684 -0500 EST m=+34.260425292
+ leader 2 is sending 2024-03-01 15:09:31.511661 -0500 EST m=+34.361401584
+ leader 2 is sending 2024-03-01 15:09:31.612574 -0500 EST m=+34.462313792
+ leader 2 is sending 2024-03-01 15:09:31.712999 -0500 EST m=+34.562737751
+ leader 2 is sending 2024-03-01 15:09:31.813601 -0500 EST m=+34.663339126
+ leader 2 is sending 2024-03-01 15:09:31.91416 -0500 EST m=+34.763896251
+ leader 2 is sending 2024-03-01 15:09:32.014493 -0500 EST m=+34.864228834
+ leader 2 is sending 2024-03-01 15:09:32.114767 -0500 EST m=+34.964501751
+ leader 2 is sending 2024-03-01 15:09:32.215094 -0500 EST m=+35.064828251
+ leader 2 is sending 2024-03-01 15:09:32.31558 -0500 EST m=+35.165313126
+ leader 2 is sending 2024-03-01 15:09:32.416034 -0500 EST m=+35.265767042
+ leader 2 is sending 2024-03-01 15:09:32.516414 -0500 EST m=+35.366146417
+ leader 2 is sending 2024-03-01 15:09:32.617956 -0500 EST m=+35.467686501
+ leader 2 is sending 2024-03-01 15:09:32.719388 -0500 EST m=+35.569118001
+ leader 2 is sending 2024-03-01 15:09:32.821271 -0500 EST m=+35.671000501
+ leader 2 is sending 2024-03-01 15:09:32.922499 -0500 EST m=+35.772227751
+ leader 2 is sending 2024-03-01 15:09:33.023646 -0500 EST m=+35.873373542
+ leader 2 is sending 2024-03-01 15:09:33.124235 -0500 EST m=+35.973961292
+ leader 2 is sending 2024-03-01 15:09:33.225712 -0500 EST m=+36.075438042
+ leader 2 is sending 2024-03-01 15:09:33.326883 -0500 EST m=+36.176608167
+ leader 2 is sending 2024-03-01 15:09:33.42809 -0500 EST m=+36.277814667
+ server 0 starts election
+server: 2 term:3 Voted: 0
+server:0 Term:3 is leader
+ server: 1 term:3 Voted: 0
+leader 0 is sending 2024-03-01 15:09:33.548813 -0500 EST m=+36.398536042
+ leader 0 is sending 2024-03-01 15:09:33.649839 -0500 EST m=+36.499561042
+ leader 0 is sending 2024-03-01 15:09:33.750942 -0500 EST m=+36.600663084
+ leader 0 is sending 2024-03-01 15:09:33.851266 -0500 EST m=+36.700986084
+ leader 0 is sending 2024-03-01 15:09:33.951864 -0500 EST m=+36.801583542
+ leader 0 is sending 2024-03-01 15:09:34.052518 -0500 EST m=+36.902236917
+ leader 0 is sending 2024-03-01 15:09:34.153624 -0500 EST m=+37.003342084
+ leader 0 is sending 2024-03-01 15:09:34.254448 -0500 EST m=+37.104164834
+ leader 0 is sending 2024-03-01 15:09:34.354768 -0500 EST m=+37.204484709
+ leader 0 is sending 2024-03-01 15:09:34.455134 -0500 EST m=+37.304849209
+ leader 0 is sending 2024-03-01 15:09:34.555366 -0500 EST m=+37.405080334
+ leader 0 is sending 2024-03-01 15:09:34.656333 -0500 EST m=+37.506046792
+ leader 0 is sending 2024-03-01 15:09:34.757512 -0500 EST m=+37.607224459
+ leader 0 is sending 2024-03-01 15:09:34.858832 -0500 EST m=+37.708544084
+ leader 0 is sending 2024-03-01 15:09:34.967697 -0500 EST m=+37.817407876
+ leader 0 is sending 2024-03-01 15:09:35.068949 -0500 EST m=+37.918659292
+ leader 0 is sending 2024-03-01 15:09:35.170384 -0500 EST m=+38.020093709
+ leader 0 is sending 2024-03-01 15:09:35.27157 -0500 EST m=+38.121278584
+ leader 0 is sending 2024-03-01 15:09:35.372999 -0500 EST m=+38.222706917
+ leader 0 is sending 2024-03-01 15:09:35.473584 -0500 EST m=+38.323291584
+ leader 0 is sending 2024-03-01 15:09:35.574395 -0500 EST m=+38.424101126
+ leader 0 is sending 2024-03-01 15:09:35.674681 -0500 EST m=+38.524386792
+ leader 0 is sending 2024-03-01 15:09:35.774922 -0500 EST m=+38.624626376
+ leader 0 is sending 2024-03-01 15:09:35.876101 -0500 EST m=+38.725804501
+ leader 0 is sending 2024-03-01 15:09:35.977319 -0500 EST m=+38.827022209
+ leader 0 is sending 2024-03-01 15:09:36.078486 -0500 EST m=+38.928187709
+ leader 0 is sending 2024-03-01 15:09:36.179249 -0500 EST m=+39.028950084
+ leader 0 is sending 2024-03-01 15:09:36.280362 -0500 EST m=+39.130062626
+ leader 0 is sending 2024-03-01 15:09:36.381599 -0500 EST m=+39.231298751
+ leader 0 is sending 2024-03-01 15:09:36.487297 -0500 EST m=+39.336995751
+ leader 0 is sending 2024-03-01 15:09:36.589124 -0500 EST m=+39.438822084
+ leader 0 is sending 2024-03-01 15:09:36.690303 -0500 EST m=+39.539999876
+ leader 0 is sending 2024-03-01 15:09:36.791542 -0500 EST m=+39.641237626
+ leader 0 is sending 2024-03-01 15:09:36.892742 -0500 EST m=+39.742436917
+ leader 0 is sending 2024-03-01 15:09:36.994187 -0500 EST m=+39.843881417
+ leader 0 is sending 2024-03-01 15:09:37.09444 -0500 EST m=+39.944133959
+ leader 0 is sending 2024-03-01 15:09:37.195585 -0500 EST m=+40.045277417
+ leader 0 is sending 2024-03-01 15:09:37.299361 -0500 EST m=+40.149052376
+ leader 0 is sending 2024-03-01 15:09:37.40058 -0500 EST m=+40.250270667
+ leader 0 is sending 2024-03-01 15:09:37.501773 -0500 EST m=+40.351463792
+ leader 0 is sending 2024-03-01 15:09:37.604018 -0500 EST m=+40.453707292
+ leader 0 is sending 2024-03-01 15:09:37.705162 -0500 EST m=+40.554850459
+ leader 0 is sending 2024-03-01 15:09:37.806381 -0500 EST m=+40.656068042
+ leader 0 is sending 2024-03-01 15:09:37.90727 -0500 EST m=+40.756956834
+ leader 0 is sending 2024-03-01 15:09:38.00792 -0500 EST m=+40.857605709
+ leader 0 is sending 2024-03-01 15:09:38.108308 -0500 EST m=+40.957993626
+ leader 0 is sending 2024-03-01 15:09:38.20946 -0500 EST m=+41.059144251
+ leader 0 is sending 2024-03-01 15:09:38.310653 -0500 EST m=+41.160336376
+ leader 0 is sending 2024-03-01 15:09:38.411779 -0500 EST m=+41.261461292
+ leader 0 is sending 2024-03-01 15:09:38.51229 -0500 EST m=+41.361972251
+ leader 0 is sending 2024-03-01 15:09:38.612876 -0500 EST m=+41.462556334
+ leader 0 is sending 2024-03-01 15:09:38.714166 -0500 EST m=+41.563845459
+ leader 0 is sending 2024-03-01 15:09:38.814717 -0500 EST m=+41.664395959
+ leader 0 is sending 2024-03-01 15:09:38.915208 -0500 EST m=+41.764886501
+ leader 0 is sending 2024-03-01 15:09:39.015342 -0500 EST m=+41.865019834
+ leader 0 is sending 2024-03-01 15:09:39.115613 -0500 EST m=+41.965289667
+ leader 0 is sending 2024-03-01 15:09:39.216732 -0500 EST m=+42.066407709
+ leader 0 is sending 2024-03-01 15:09:39.317598 -0500 EST m=+42.167272584
+ leader 0 is sending 2024-03-01 15:09:39.418766 -0500 EST m=+42.268439792
+ leader 0 is sending 2024-03-01 15:09:39.519851 -0500 EST m=+42.369523876
+ leader 0 is sending 2024-03-01 15:09:39.628619 -0500 EST m=+42.478291001
+ leader 0 is sending 2024-03-01 15:09:39.728895 -0500 EST m=+42.578566501
+ leader 0 is sending 2024-03-01 15:09:39.829978 -0500 EST m=+42.679648167
+ leader 0 is sending 2024-03-01 15:09:39.931116 -0500 EST m=+42.780786042
+ leader 0 is sending 2024-03-01 15:09:40.032645 -0500 EST m=+42.882314209
+ leader 0 is sending 2024-03-01 15:09:40.133778 -0500 EST m=+42.983445667
+ leader 0 is sending 2024-03-01 15:09:40.240583 -0500 EST m=+43.090250459
+ --- FAIL: TestFollowerFailure3B (10.03s)
+    config.go:601: one(101) failed to reach agreement
+Test (3B): test failure of leaders ...
+server 0 starts election
+server: 2 term:2 Voted: 0
+server: 1 term:2 Voted: 0
+server:0 Term:2 is leader
+ leader 0 is sending 2024-03-01 15:09:40.500053 -0500 EST m=+43.349718334
+ leader 0 is sending 2024-03-01 15:09:40.607253 -0500 EST m=+43.456916834
+ leader 0 is sending 2024-03-01 15:09:40.711836 -0500 EST m=+43.561498709
+ leader 0 is sending 2024-03-01 15:09:40.817013 -0500 EST m=+43.666675209
+ leader 0 is sending 2024-03-01 15:09:40.926584 -0500 EST m=+43.776245376
+ leader 0 is sending 2024-03-01 15:09:41.027198 -0500 EST m=+43.876858126
+ leader 0 is sending 2024-03-01 15:09:41.133062 -0500 EST m=+43.982721959
+ leader 0 is sending 2024-03-01 15:09:41.23445 -0500 EST m=+44.084109126
+ leader 0 is sending 2024-03-01 15:09:41.335662 -0500 EST m=+44.185319959
+ leader 0 is sending 2024-03-01 15:09:41.437149 -0500 EST m=+44.286806084
+ leader 0 is sending 2024-03-01 15:09:41.538467 -0500 EST m=+44.388123501
+ leader 0 is sending 2024-03-01 15:09:41.639071 -0500 EST m=+44.488726209
+ leader 0 is sending 2024-03-01 15:09:41.740069 -0500 EST m=+44.589724084
+ leader 0 is sending 2024-03-01 15:09:41.841495 -0500 EST m=+44.691148292
+ leader 0 is sending 2024-03-01 15:09:41.948471 -0500 EST m=+44.798123792
+ leader 0 is sending 2024-03-01 15:09:42.050762 -0500 EST m=+44.900413459
+ leader 0 is sending 2024-03-01 15:09:42.151921 -0500 EST m=+45.001571751
+ leader 0 is sending 2024-03-01 15:09:42.253305 -0500 EST m=+45.102955167
+ leader 0 is sending 2024-03-01 15:09:42.354616 -0500 EST m=+45.204265376
+ leader 0 is sending 2024-03-01 15:09:42.456256 -0500 EST m=+45.305905042
+ leader 0 is sending 2024-03-01 15:09:42.558687 -0500 EST m=+45.408334542
+ leader 0 is sending 2024-03-01 15:09:42.660713 -0500 EST m=+45.510359834
+ leader 0 is sending 2024-03-01 15:09:42.762776 -0500 EST m=+45.612421626
+ leader 0 is sending 2024-03-01 15:09:42.869834 -0500 EST m=+45.719478959
+ leader 0 is sending 2024-03-01 15:09:42.970409 -0500 EST m=+45.820052751
+ leader 0 is sending 2024-03-01 15:09:43.071423 -0500 EST m=+45.921066834
+ leader 0 is sending 2024-03-01 15:09:43.172883 -0500 EST m=+46.022525126
+ leader 0 is sending 2024-03-01 15:09:43.27399 -0500 EST m=+46.123631542
+ leader 0 is sending 2024-03-01 15:09:43.37554 -0500 EST m=+46.225180584
+ leader 0 is sending 2024-03-01 15:09:43.475885 -0500 EST m=+46.325525209
+ leader 0 is sending 2024-03-01 15:09:43.577213 -0500 EST m=+46.426852042
+ leader 0 is sending 2024-03-01 15:09:43.678398 -0500 EST m=+46.528036459
+ leader 0 is sending 2024-03-01 15:09:43.77916 -0500 EST m=+46.628797209
+ leader 0 is sending 2024-03-01 15:09:43.880207 -0500 EST m=+46.729843584
+ leader 0 is sending 2024-03-01 15:09:43.981392 -0500 EST m=+46.831027876
+ leader 0 is sending 2024-03-01 15:09:44.083344 -0500 EST m=+46.932978959
+ leader 0 is sending 2024-03-01 15:09:44.185744 -0500 EST m=+47.035377792
+ leader 0 is sending 2024-03-01 15:09:44.286464 -0500 EST m=+47.136097376
+ leader 0 is sending 2024-03-01 15:09:44.387602 -0500 EST m=+47.237234584
+ leader 0 is sending 2024-03-01 15:09:44.488763 -0500 EST m=+47.338394917
+ leader 0 is sending 2024-03-01 15:09:44.589009 -0500 EST m=+47.438639709
+ leader 0 is sending 2024-03-01 15:09:44.690194 -0500 EST m=+47.539823792
+ leader 0 is sending 2024-03-01 15:09:44.79179 -0500 EST m=+47.641419084
+ leader 0 is sending 2024-03-01 15:09:44.893059 -0500 EST m=+47.742686667
+ leader 0 is sending 2024-03-01 15:09:44.994998 -0500 EST m=+47.844625167
+ leader 0 is sending 2024-03-01 15:09:45.096336 -0500 EST m=+47.945962501
+ leader 0 is sending 2024-03-01 15:09:45.197223 -0500 EST m=+48.046849292
+ leader 0 is sending 2024-03-01 15:09:45.297767 -0500 EST m=+48.147391626
+ leader 0 is sending 2024-03-01 15:09:45.400358 -0500 EST m=+48.249982209
+ leader 0 is sending 2024-03-01 15:09:45.50197 -0500 EST m=+48.351592917
+ leader 0 is sending 2024-03-01 15:09:45.603143 -0500 EST m=+48.452764792
+ leader 0 is sending 2024-03-01 15:09:45.704803 -0500 EST m=+48.554423959
+ leader 0 is sending 2024-03-01 15:09:45.805898 -0500 EST m=+48.655518042
+ leader 0 is sending 2024-03-01 15:09:45.906599 -0500 EST m=+48.756218917
+ leader 0 is sending 2024-03-01 15:09:46.006835 -0500 EST m=+48.856454042
+ leader 0 is sending 2024-03-01 15:09:46.108041 -0500 EST m=+48.957658876
+ leader 0 is sending 2024-03-01 15:09:46.209525 -0500 EST m=+49.059141917
+ leader 0 is sending 2024-03-01 15:09:46.310728 -0500 EST m=+49.160344001
+ leader 0 is sending 2024-03-01 15:09:46.411906 -0500 EST m=+49.261521417
+ leader 0 is sending 2024-03-01 15:09:46.512736 -0500 EST m=+49.362351501
+ leader 0 is sending 2024-03-01 15:09:46.613474 -0500 EST m=+49.463087292
+ leader 0 is sending 2024-03-01 15:09:46.714988 -0500 EST m=+49.564600542
+ leader 0 is sending 2024-03-01 15:09:46.816204 -0500 EST m=+49.665815834
+ leader 0 is sending 2024-03-01 15:09:46.916616 -0500 EST m=+49.766227667
+ leader 0 is sending 2024-03-01 15:09:47.017782 -0500 EST m=+49.867392209
+ leader 0 is sending 2024-03-01 15:09:47.118996 -0500 EST m=+49.968605334
+ leader 0 is sending 2024-03-01 15:09:47.21949 -0500 EST m=+50.069098542
+ leader 0 is sending 2024-03-01 15:09:47.321402 -0500 EST m=+50.171010209
+ leader 0 is sending 2024-03-01 15:09:47.426943 -0500 EST m=+50.276549917
+ leader 0 is sending 2024-03-01 15:09:47.52867 -0500 EST m=+50.378276626
+ leader 0 is sending 2024-03-01 15:09:47.630312 -0500 EST m=+50.479916834
+ leader 0 is sending 2024-03-01 15:09:47.731486 -0500 EST m=+50.581090542
+ leader 0 is sending 2024-03-01 15:09:47.832286 -0500 EST m=+50.681889334
+ leader 0 is sending 2024-03-01 15:09:47.932905 -0500 EST m=+50.782508042
+ leader 0 is sending 2024-03-01 15:09:48.03319 -0500 EST m=+50.882791501
+ leader 0 is sending 2024-03-01 15:09:48.134138 -0500 EST m=+50.983739126
+ leader 0 is sending 2024-03-01 15:09:48.23523 -0500 EST m=+51.084830251
+ leader 0 is sending 2024-03-01 15:09:48.337346 -0500 EST m=+51.186945084
+ leader 0 is sending 2024-03-01 15:09:48.439589 -0500 EST m=+51.289187042
+ leader 0 is sending 2024-03-01 15:09:48.541109 -0500 EST m=+51.390706417
+ leader 0 is sending 2024-03-01 15:09:48.642381 -0500 EST m=+51.491977792
+ leader 0 is sending 2024-03-01 15:09:48.743667 -0500 EST m=+51.593262584
+ leader 0 is sending 2024-03-01 15:09:48.846151 -0500 EST m=+51.695746334
+ leader 0 is sending 2024-03-01 15:09:48.948202 -0500 EST m=+51.797795667
+ leader 0 is sending 2024-03-01 15:09:49.048987 -0500 EST m=+51.898580417
+ leader 0 is sending 2024-03-01 15:09:49.149926 -0500 EST m=+51.999518209
+ leader 0 is sending 2024-03-01 15:09:49.253262 -0500 EST m=+52.102853376
+ leader 0 is sending 2024-03-01 15:09:49.355449 -0500 EST m=+52.205040084
+ leader 0 is sending 2024-03-01 15:09:49.456743 -0500 EST m=+52.306332459
+ leader 0 is sending 2024-03-01 15:09:49.558134 -0500 EST m=+52.407723042
+ leader 0 is sending 2024-03-01 15:09:49.659434 -0500 EST m=+52.509022251
+ leader 0 is sending 2024-03-01 15:09:49.759756 -0500 EST m=+52.609344376
+ leader 0 is sending 2024-03-01 15:09:49.861377 -0500 EST m=+52.710964042
+ leader 0 is sending 2024-03-01 15:09:49.962827 -0500 EST m=+52.812412459
+ leader 0 is sending 2024-03-01 15:09:50.064059 -0500 EST m=+52.913643876
+ leader 0 is sending 2024-03-01 15:09:50.164819 -0500 EST m=+53.014402542
+ leader 0 is sending 2024-03-01 15:09:50.265249 -0500 EST m=+53.114832959
+ --- FAIL: TestLeaderFailure3B (10.04s)
+    config.go:601: one(101) failed to reach agreement
+Test (3B): agreement after follower reconnects ...
+server 2 starts election
+server: 0 term:2 Voted: 2
+server: 1 term:2 Voted: 2
+server:2 Term:2 is leader
+ leader 2 is sending 2024-03-01 15:09:50.584321 -0500 EST m=+53.433901751
+ leader 2 is sending 2024-03-01 15:09:50.685474 -0500 EST m=+53.535053834
+ leader 2 is sending 2024-03-01 15:09:50.787687 -0500 EST m=+53.637265834
+ leader 2 is sending 2024-03-01 15:09:50.890029 -0500 EST m=+53.739606917
+ leader 2 is sending 2024-03-01 15:09:50.991372 -0500 EST m=+53.840949292
+ leader 2 is sending 2024-03-01 15:09:51.092288 -0500 EST m=+53.941864126
+ leader 2 is sending 2024-03-01 15:09:51.193451 -0500 EST m=+54.043026084
+ leader 2 is sending 2024-03-01 15:09:51.294194 -0500 EST m=+54.143768209
+ leader 2 is sending 2024-03-01 15:09:51.395507 -0500 EST m=+54.245080167
+ leader 2 is sending 2024-03-01 15:09:51.496784 -0500 EST m=+54.346356751
+ leader 2 is sending 2024-03-01 15:09:51.598532 -0500 EST m=+54.448104167
+ leader 2 is sending 2024-03-01 15:09:51.699819 -0500 EST m=+54.549390417
+ leader 2 is sending 2024-03-01 15:09:51.800669 -0500 EST m=+54.650239417
+ leader 2 is sending 2024-03-01 15:09:51.902011 -0500 EST m=+54.751580209
+ leader 2 is sending 2024-03-01 15:09:52.003248 -0500 EST m=+54.852816626
+ leader 2 is sending 2024-03-01 15:09:52.104488 -0500 EST m=+54.954055417
+ leader 2 is sending 2024-03-01 15:09:52.205347 -0500 EST m=+55.054913501
+ leader 2 is sending 2024-03-01 15:09:52.306539 -0500 EST m=+55.156105167
+ leader 2 is sending 2024-03-01 15:09:52.407949 -0500 EST m=+55.257513834
+ leader 2 is sending 2024-03-01 15:09:52.508745 -0500 EST m=+55.358309584
+ leader 2 is sending 2024-03-01 15:09:52.610646 -0500 EST m=+55.460209792
+ leader 2 is sending 2024-03-01 15:09:52.712697 -0500 EST m=+55.562259834
+ leader 2 is sending 2024-03-01 15:09:52.815319 -0500 EST m=+55.664880709
+ leader 2 is sending 2024-03-01 15:09:52.916703 -0500 EST m=+55.766263959
+ leader 2 is sending 2024-03-01 15:09:53.018108 -0500 EST m=+55.867668209
+ leader 2 is sending 2024-03-01 15:09:53.119998 -0500 EST m=+55.969557334
+ leader 2 is sending 2024-03-01 15:09:53.220984 -0500 EST m=+56.070543792
+ leader 2 is sending 2024-03-01 15:09:53.322235 -0500 EST m=+56.171793001
+ leader 2 is sending 2024-03-01 15:09:53.423471 -0500 EST m=+56.273027584
+ leader 2 is sending 2024-03-01 15:09:53.524549 -0500 EST m=+56.374105084
+ leader 2 is sending 2024-03-01 15:09:53.625266 -0500 EST m=+56.474821459
+ leader 2 is sending 2024-03-01 15:09:53.726084 -0500 EST m=+56.575637917
+ leader 2 is sending 2024-03-01 15:09:53.827031 -0500 EST m=+56.676584584
+ leader 2 is sending 2024-03-01 15:09:53.928072 -0500 EST m=+56.777624459
+ leader 2 is sending 2024-03-01 15:09:54.028533 -0500 EST m=+56.878084709
+ leader 2 is sending 2024-03-01 15:09:54.128977 -0500 EST m=+56.978528251
+ leader 2 is sending 2024-03-01 15:09:54.230152 -0500 EST m=+57.079702126
+ leader 2 is sending 2024-03-01 15:09:54.330744 -0500 EST m=+57.180293001
+ leader 2 is sending 2024-03-01 15:09:54.432002 -0500 EST m=+57.281549834
+ leader 2 is sending 2024-03-01 15:09:54.53277 -0500 EST m=+57.382317792
+ leader 2 is sending 2024-03-01 15:09:54.634008 -0500 EST m=+57.483554751
+ leader 2 is sending 2024-03-01 15:09:54.735215 -0500 EST m=+57.584760501
+ leader 2 is sending 2024-03-01 15:09:54.835445 -0500 EST m=+57.684990709
+ leader 2 is sending 2024-03-01 15:09:54.936554 -0500 EST m=+57.786097542
+ leader 2 is sending 2024-03-01 15:09:55.038256 -0500 EST m=+57.887799459
+ leader 2 is sending 2024-03-01 15:09:55.139615 -0500 EST m=+57.989157292
+ leader 2 is sending 2024-03-01 15:09:55.240728 -0500 EST m=+58.090269084
+ leader 2 is sending 2024-03-01 15:09:55.341873 -0500 EST m=+58.191413501
+ leader 2 is sending 2024-03-01 15:09:55.443061 -0500 EST m=+58.292600417
+ leader 2 is sending 2024-03-01 15:09:55.544655 -0500 EST m=+58.394193917
+ leader 2 is sending 2024-03-01 15:09:55.645885 -0500 EST m=+58.495422959
+ leader 2 is sending 2024-03-01 15:09:55.746094 -0500 EST m=+58.595631709
+ leader 2 is sending 2024-03-01 15:09:55.847243 -0500 EST m=+58.696779417
+ leader 2 is sending 2024-03-01 15:09:55.947911 -0500 EST m=+58.797446667
+ leader 2 is sending 2024-03-01 15:09:56.049156 -0500 EST m=+58.898690709
+ leader 2 is sending 2024-03-01 15:09:56.151225 -0500 EST m=+59.000759167
+ leader 2 is sending 2024-03-01 15:09:56.252801 -0500 EST m=+59.102333834
+ leader 2 is sending 2024-03-01 15:09:56.354722 -0500 EST m=+59.204254167
+ leader 2 is sending 2024-03-01 15:09:56.455263 -0500 EST m=+59.304794709
+ leader 2 is sending 2024-03-01 15:09:56.557042 -0500 EST m=+59.406572876
+ leader 2 is sending 2024-03-01 15:09:56.657978 -0500 EST m=+59.507508376
+ leader 2 is sending 2024-03-01 15:09:56.761993 -0500 EST m=+59.611521542
+ leader 2 is sending 2024-03-01 15:09:56.86262 -0500 EST m=+59.712147626
+ leader 2 is sending 2024-03-01 15:09:56.964258 -0500 EST m=+59.813784709
+ leader 2 is sending 2024-03-01 15:09:57.065714 -0500 EST m=+59.915239751
+ leader 2 is sending 2024-03-01 15:09:57.16622 -0500 EST m=+60.015745001
+ leader 2 is sending 2024-03-01 15:09:57.267453 -0500 EST m=+60.116977501
+ leader 2 is sending 2024-03-01 15:09:57.368684 -0500 EST m=+60.218207834
+ leader 2 is sending 2024-03-01 15:09:57.469473 -0500 EST m=+60.318996292
+ leader 2 is sending 2024-03-01 15:09:57.570635 -0500 EST m=+60.420157376
+ leader 2 is sending 2024-03-01 15:09:57.671932 -0500 EST m=+60.521452792
+ leader 2 is sending 2024-03-01 15:09:57.773131 -0500 EST m=+60.622651334
+ leader 2 is sending 2024-03-01 15:09:57.87347 -0500 EST m=+60.722989251
+ leader 2 is sending 2024-03-01 15:09:57.974778 -0500 EST m=+60.824296626
+ leader 2 is sending 2024-03-01 15:09:58.076724 -0500 EST m=+60.926241626
+ leader 2 is sending 2024-03-01 15:09:58.179209 -0500 EST m=+61.028725626
+ leader 2 is sending 2024-03-01 15:09:58.280137 -0500 EST m=+61.129653084
+ leader 2 is sending 2024-03-01 15:09:58.381605 -0500 EST m=+61.231120042
+ leader 2 is sending 2024-03-01 15:09:58.483729 -0500 EST m=+61.333243042
+ leader 2 is sending 2024-03-01 15:09:58.584905 -0500 EST m=+61.434418417
+ leader 2 is sending 2024-03-01 15:09:58.685843 -0500 EST m=+61.535355376
+ leader 2 is sending 2024-03-01 15:09:58.786751 -0500 EST m=+61.636262376
+ leader 2 is sending 2024-03-01 15:09:58.887655 -0500 EST m=+61.737165584
+ leader 2 is sending 2024-03-01 15:09:58.990214 -0500 EST m=+61.839724417
+ leader 2 is sending 2024-03-01 15:09:59.091454 -0500 EST m=+61.940963334
+ leader 2 is sending 2024-03-01 15:09:59.192209 -0500 EST m=+62.041717667
+ leader 2 is sending 2024-03-01 15:09:59.292888 -0500 EST m=+62.142395376
+ leader 2 is sending 2024-03-01 15:09:59.394101 -0500 EST m=+62.243607876
+ leader 2 is sending 2024-03-01 15:09:59.495279 -0500 EST m=+62.344784501
+ leader 2 is sending 2024-03-01 15:09:59.596456 -0500 EST m=+62.445960626
+ leader 2 is sending 2024-03-01 15:09:59.697433 -0500 EST m=+62.546937167
+ leader 2 is sending 2024-03-01 15:09:59.797928 -0500 EST m=+62.647431709
+ leader 2 is sending 2024-03-01 15:09:59.898727 -0500 EST m=+62.748229292
+ leader 2 is sending 2024-03-01 15:10:00.000003 -0500 EST m=+62.849504626
+ leader 2 is sending 2024-03-01 15:10:00.101241 -0500 EST m=+62.950742084
+ leader 2 is sending 2024-03-01 15:10:00.201933 -0500 EST m=+63.051433209
+ leader 2 is sending 2024-03-01 15:10:00.303288 -0500 EST m=+63.152787167
+ --- FAIL: TestFailAgree3B (10.04s)
+    config.go:601: one(101) failed to reach agreement
+Test (3B): no agreement if too many followers disconnect ...
+server 3 starts election
+server: 4 term:2 Voted: 3
+server: 0 term:2 Voted: 3
+server: 2 term:2 Voted: 3
+server:3 Term:2 is leader
+ server: 1 term:2 Voted: 3
+leader 3 is sending 2024-03-01 15:10:00.570177 -0500 EST m=+63.419674126
+ leader 3 is sending 2024-03-01 15:10:00.671278 -0500 EST m=+63.520773917
+ leader 3 is sending 2024-03-01 15:10:00.772044 -0500 EST m=+63.621540959
+ leader 3 is sending 2024-03-01 15:10:00.874857 -0500 EST m=+63.724351001
+ leader 3 is sending 2024-03-01 15:10:00.975425 -0500 EST m=+63.824919459
+ leader 3 is sending 2024-03-01 15:10:01.077405 -0500 EST m=+63.926897251
+ leader 3 is sending 2024-03-01 15:10:01.178886 -0500 EST m=+64.028378334
+ leader 3 is sending 2024-03-01 15:10:01.279654 -0500 EST m=+64.129145251
+ leader 3 is sending 2024-03-01 15:10:01.38074 -0500 EST m=+64.230230292
+ leader 3 is sending 2024-03-01 15:10:01.481152 -0500 EST m=+64.330641376
+ leader 3 is sending 2024-03-01 15:10:01.582332 -0500 EST m=+64.431820334
+ leader 3 is sending 2024-03-01 15:10:01.683521 -0500 EST m=+64.533009001
+ leader 3 is sending 2024-03-01 15:10:01.785623 -0500 EST m=+64.635110251
+ leader 3 is sending 2024-03-01 15:10:01.886633 -0500 EST m=+64.736118959
+ leader 3 is sending 2024-03-01 15:10:01.986874 -0500 EST m=+64.836359084
+ leader 3 is sending 2024-03-01 15:10:02.087976 -0500 EST m=+64.937460417
+ leader 3 is sending 2024-03-01 15:10:02.190279 -0500 EST m=+65.039762626
+ leader 3 is sending 2024-03-01 15:10:02.291916 -0500 EST m=+65.141398626
+ leader 3 is sending 2024-03-01 15:10:02.393115 -0500 EST m=+65.242596501
+ leader 3 is sending 2024-03-01 15:10:02.494302 -0500 EST m=+65.343783126
+ leader 3 is sending 2024-03-01 15:10:02.594645 -0500 EST m=+65.444125084
+ leader 3 is sending 2024-03-01 15:10:02.695903 -0500 EST m=+65.545382334
+ leader 3 is sending 2024-03-01 15:10:02.797952 -0500 EST m=+65.647430084
+ leader 3 is sending 2024-03-01 15:10:02.898906 -0500 EST m=+65.748384501
+ leader 3 is sending 2024-03-01 15:10:02.999766 -0500 EST m=+65.849242251
+ leader 3 is sending 2024-03-01 15:10:03.100445 -0500 EST m=+65.949921417
+ leader 3 is sending 2024-03-01 15:10:03.203298 -0500 EST m=+66.052772751
+ leader 3 is sending 2024-03-01 15:10:03.304008 -0500 EST m=+66.153482292
+ leader 3 is sending 2024-03-01 15:10:03.404713 -0500 EST m=+66.254186501
+ leader 3 is sending 2024-03-01 15:10:03.505964 -0500 EST m=+66.355436834
+ leader 3 is sending 2024-03-01 15:10:03.606773 -0500 EST m=+66.456244834
+ leader 3 is sending 2024-03-01 15:10:03.707457 -0500 EST m=+66.556928126
+ leader 3 is sending 2024-03-01 15:10:03.808075 -0500 EST m=+66.657544626
+ leader 3 is sending 2024-03-01 15:10:03.909117 -0500 EST m=+66.758585751
+ leader 3 is sending 2024-03-01 15:10:04.010443 -0500 EST m=+66.859910667
+ leader 3 is sending 2024-03-01 15:10:04.111646 -0500 EST m=+66.961113251
+ leader 3 is sending 2024-03-01 15:10:04.213001 -0500 EST m=+67.062467084
+ leader 3 is sending 2024-03-01 15:10:04.313187 -0500 EST m=+67.162653126
+ leader 3 is sending 2024-03-01 15:10:04.414127 -0500 EST m=+67.263591876
+ leader 3 is sending 2024-03-01 15:10:04.515289 -0500 EST m=+67.364753167
+ leader 3 is sending 2024-03-01 15:10:04.616599 -0500 EST m=+67.466061792
+ leader 3 is sending 2024-03-01 15:10:04.717963 -0500 EST m=+67.567425584
+ leader 3 is sending 2024-03-01 15:10:04.819196 -0500 EST m=+67.668657001
+ leader 3 is sending 2024-03-01 15:10:04.920045 -0500 EST m=+67.769505542
+ leader 3 is sending 2024-03-01 15:10:05.020855 -0500 EST m=+67.870314917
+ leader 3 is sending 2024-03-01 15:10:05.12134 -0500 EST m=+67.970798667
+ leader 3 is sending 2024-03-01 15:10:05.221505 -0500 EST m=+68.070963001
+ leader 3 is sending 2024-03-01 15:10:05.322733 -0500 EST m=+68.172189917
+ leader 3 is sending 2024-03-01 15:10:05.423091 -0500 EST m=+68.272547084
+ leader 3 is sending 2024-03-01 15:10:05.524413 -0500 EST m=+68.373868084
+ leader 3 is sending 2024-03-01 15:10:05.625664 -0500 EST m=+68.475118459
+ leader 3 is sending 2024-03-01 15:10:05.726829 -0500 EST m=+68.576282792
+ leader 3 is sending 2024-03-01 15:10:05.827852 -0500 EST m=+68.677305042
+ leader 3 is sending 2024-03-01 15:10:05.928307 -0500 EST m=+68.777759251
+ leader 3 is sending 2024-03-01 15:10:06.029371 -0500 EST m=+68.878822626
+ leader 3 is sending 2024-03-01 15:10:06.131305 -0500 EST m=+68.980755667
+ leader 3 is sending 2024-03-01 15:10:06.231987 -0500 EST m=+69.081436167
+ leader 3 is sending 2024-03-01 15:10:06.333494 -0500 EST m=+69.182942751
+ leader 3 is sending 2024-03-01 15:10:06.434524 -0500 EST m=+69.283971959
+ leader 3 is sending 2024-03-01 15:10:06.535695 -0500 EST m=+69.385141709
+ leader 3 is sending 2024-03-01 15:10:06.636889 -0500 EST m=+69.486334709
+ leader 3 is sending 2024-03-01 15:10:06.738336 -0500 EST m=+69.587781334
+ leader 3 is sending 2024-03-01 15:10:06.839316 -0500 EST m=+69.688760251
+ leader 3 is sending 2024-03-01 15:10:06.940372 -0500 EST m=+69.789816376
+ leader 3 is sending 2024-03-01 15:10:07.042971 -0500 EST m=+69.892413667
+ leader 3 is sending 2024-03-01 15:10:07.144992 -0500 EST m=+69.994434334
+ leader 3 is sending 2024-03-01 15:10:07.246285 -0500 EST m=+70.095725792
+ leader 3 is sending 2024-03-01 15:10:07.347498 -0500 EST m=+70.196939001
+ leader 3 is sending 2024-03-01 15:10:07.448669 -0500 EST m=+70.298108084
+ leader 3 is sending 2024-03-01 15:10:07.548878 -0500 EST m=+70.398316459
+ leader 3 is sending 2024-03-01 15:10:07.649786 -0500 EST m=+70.499224042
+ leader 3 is sending 2024-03-01 15:10:07.750956 -0500 EST m=+70.600392251
+ leader 3 is sending 2024-03-01 15:10:07.851313 -0500 EST m=+70.700748667
+ leader 3 is sending 2024-03-01 15:10:07.951991 -0500 EST m=+70.801425626
+ leader 3 is sending 2024-03-01 15:10:08.052316 -0500 EST m=+70.901749959
+ leader 3 is sending 2024-03-01 15:10:08.152671 -0500 EST m=+71.002104709
+ leader 3 is sending 2024-03-01 15:10:08.254214 -0500 EST m=+71.103646709
+ leader 3 is sending 2024-03-01 15:10:08.354655 -0500 EST m=+71.204088376
+ leader 3 is sending 2024-03-01 15:10:08.46229 -0500 EST m=+71.311720376
+ leader 3 is sending 2024-03-01 15:10:08.563067 -0500 EST m=+71.412497251
+ leader 3 is sending 2024-03-01 15:10:08.664637 -0500 EST m=+71.514066251
+ leader 3 is sending 2024-03-01 15:10:08.765942 -0500 EST m=+71.615369959
+ leader 3 is sending 2024-03-01 15:10:08.866775 -0500 EST m=+71.716202084
+ leader 3 is sending 2024-03-01 15:10:08.96798 -0500 EST m=+71.817406459
+ leader 3 is sending 2024-03-01 15:10:09.069108 -0500 EST m=+71.918533709
+ leader 3 is sending 2024-03-01 15:10:09.170028 -0500 EST m=+72.019452667
+ leader 3 is sending 2024-03-01 15:10:09.276298 -0500 EST m=+72.125721834
+ leader 3 is sending 2024-03-01 15:10:09.376937 -0500 EST m=+72.226360126
+ leader 3 is sending 2024-03-01 15:10:09.480487 -0500 EST m=+72.329909292
+ leader 3 is sending 2024-03-01 15:10:09.580943 -0500 EST m=+72.430363959
+ leader 3 is sending 2024-03-01 15:10:09.682511 -0500 EST m=+72.531931167
+ leader 3 is sending 2024-03-01 15:10:09.784493 -0500 EST m=+72.633912209
+ leader 3 is sending 2024-03-01 15:10:09.885432 -0500 EST m=+72.734850917
+ leader 3 is sending 2024-03-01 15:10:09.985673 -0500 EST m=+72.835091667
+ leader 3 is sending 2024-03-01 15:10:10.087859 -0500 EST m=+72.937276334
+ leader 3 is sending 2024-03-01 15:10:10.189052 -0500 EST m=+73.038468417
+ leader 3 is sending 2024-03-01 15:10:10.290337 -0500 EST m=+73.139752501
+ --- FAIL: TestFailNoAgree3B (10.05s)
+    config.go:601: one(10) failed to reach agreement
+Test (3B): concurrent Start()s ...
+server 1 starts election
+server: 2 term:2 Voted: 1
+server: 0 term:2 Voted: 1
+server:1 Term:2 is leader
+ leader 1 is sending 2024-03-01 15:10:10.60465 -0500 EST m=+73.454063834
+ leader 1 is sending 2024-03-01 15:10:10.706216 -0500 EST m=+73.555628001
+ leader 1 is sending 2024-03-01 15:10:10.808407 -0500 EST m=+73.657818209
+ current server0 status1
+current server1 status3
+current server2 status1
+current server0 status1
+leader 1 is sending 2024-03-01 15:10:10.909908 -0500 EST m=+73.759318459
+ leader 1 is sending 2024-03-01 15:10:11.011271 -0500 EST m=+73.860680917
+ leader 1 is sending 2024-03-01 15:10:11.111686 -0500 EST m=+73.961095792
+ leader 1 is sending 2024-03-01 15:10:11.212807 -0500 EST m=+74.062214459
+ leader 1 is sending 2024-03-01 15:10:11.314365 -0500 EST m=+74.163772334
+ leader 1 is sending 2024-03-01 15:10:11.416561 -0500 EST m=+74.265966542
+ leader 1 is sending 2024-03-01 15:10:11.517187 -0500 EST m=+74.366593084
+ leader 1 is sending 2024-03-01 15:10:11.618537 -0500 EST m=+74.467941709
+ leader 1 is sending 2024-03-01 15:10:11.719169 -0500 EST m=+74.568572834
+ leader 1 is sending 2024-03-01 15:10:11.8199 -0500 EST m=+74.669303042
+ leader 1 is sending 2024-03-01 15:10:11.921161 -0500 EST m=+74.770563751
+ leader 1 is sending 2024-03-01 15:10:12.02247 -0500 EST m=+74.871871251
+ leader 1 is sending 2024-03-01 15:10:12.124393 -0500 EST m=+74.973793501
+ leader 1 is sending 2024-03-01 15:10:12.225921 -0500 EST m=+75.075320001
+ leader 1 is sending 2024-03-01 15:10:12.327375 -0500 EST m=+75.176773292
+ leader 1 is sending 2024-03-01 15:10:12.429261 -0500 EST m=+75.278658376
+ leader 1 is sending 2024-03-01 15:10:12.530489 -0500 EST m=+75.379886084
+ leader 1 is sending 2024-03-01 15:10:12.630771 -0500 EST m=+75.480167417
+ leader 1 is sending 2024-03-01 15:10:12.731969 -0500 EST m=+75.581363584
+ leader 1 is sending 2024-03-01 15:10:12.832271 -0500 EST m=+75.681665376
+ leader 1 is sending 2024-03-01 15:10:12.932965 -0500 EST m=+75.782358251
+ leader 1 is sending 2024-03-01 15:10:13.034818 -0500 EST m=+75.884210959
+ leader 1 is sending 2024-03-01 15:10:13.136264 -0500 EST m=+75.985656001
+ leader 1 is sending 2024-03-01 15:10:13.237947 -0500 EST m=+76.087338126
+ leader 1 is sending 2024-03-01 15:10:13.339347 -0500 EST m=+76.188737334
+ leader 1 is sending 2024-03-01 15:10:13.441008 -0500 EST m=+76.290397542
+ leader 1 is sending 2024-03-01 15:10:13.542366 -0500 EST m=+76.391754167
+ leader 1 is sending 2024-03-01 15:10:13.644665 -0500 EST m=+76.494052292
+ leader 1 is sending 2024-03-01 15:10:13.745418 -0500 EST m=+76.594804626
+ leader 1 is sending 2024-03-01 15:10:13.846758 -0500 EST m=+76.696144126
+ leader 1 is sending 2024-03-01 15:10:13.947904 -0500 EST m=+76.797289001
+ leader 1 is sending 2024-03-01 15:10:14.049184 -0500 EST m=+76.898567584
+ leader 1 is sending 2024-03-01 15:10:14.151001 -0500 EST m=+77.000384084
+ leader 1 is sending 2024-03-01 15:10:14.254505 -0500 EST m=+77.103888251
+ leader 1 is sending 2024-03-01 15:10:14.355369 -0500 EST m=+77.204752084
+ current server0 status1
+current server1 status3
+current server2 status1
+current server0 status1
+leader 1 is sending 2024-03-01 15:10:14.456975 -0500 EST m=+77.306355834
+ leader 1 is sending 2024-03-01 15:10:14.557599 -0500 EST m=+77.406978792
+ leader 1 is sending 2024-03-01 15:10:14.658574 -0500 EST m=+77.507952751
+ leader 1 is sending 2024-03-01 15:10:14.759924 -0500 EST m=+77.609301751
+ leader 1 is sending 2024-03-01 15:10:14.861839 -0500 EST m=+77.711216251
+ leader 1 is sending 2024-03-01 15:10:14.963434 -0500 EST m=+77.812811042
+ leader 1 is sending 2024-03-01 15:10:15.065126 -0500 EST m=+77.914503084
+ leader 1 is sending 2024-03-01 15:10:15.166021 -0500 EST m=+78.015395417
+ leader 1 is sending 2024-03-01 15:10:15.266985 -0500 EST m=+78.116358542
+ leader 1 is sending 2024-03-01 15:10:15.368763 -0500 EST m=+78.218136084
+ leader 1 is sending 2024-03-01 15:10:15.470163 -0500 EST m=+78.319535292
+ leader 1 is sending 2024-03-01 15:10:15.573048 -0500 EST m=+78.422419709
+ leader 1 is sending 2024-03-01 15:10:15.674089 -0500 EST m=+78.523459084
+ leader 1 is sending 2024-03-01 15:10:15.775422 -0500 EST m=+78.624791167
+ leader 1 is sending 2024-03-01 15:10:15.876632 -0500 EST m=+78.726000501
+ leader 1 is sending 2024-03-01 15:10:15.977128 -0500 EST m=+78.826495667
+ leader 1 is sending 2024-03-01 15:10:16.077686 -0500 EST m=+78.927054376
+ leader 1 is sending 2024-03-01 15:10:16.179071 -0500 EST m=+79.028437167
+ leader 1 is sending 2024-03-01 15:10:16.280413 -0500 EST m=+79.129778126
+ leader 1 is sending 2024-03-01 15:10:16.381841 -0500 EST m=+79.231205251
+ leader 1 is sending 2024-03-01 15:10:16.48402 -0500 EST m=+79.333383501
+ leader 1 is sending 2024-03-01 15:10:16.585486 -0500 EST m=+79.434849042
+ leader 1 is sending 2024-03-01 15:10:16.686604 -0500 EST m=+79.535965626
+ leader 1 is sending 2024-03-01 15:10:16.788248 -0500 EST m=+79.637609292
+ leader 1 is sending 2024-03-01 15:10:16.88967 -0500 EST m=+79.739030751
+ leader 1 is sending 2024-03-01 15:10:16.990995 -0500 EST m=+79.840354501
+ leader 1 is sending 2024-03-01 15:10:17.093152 -0500 EST m=+79.942510959
+ leader 1 is sending 2024-03-01 15:10:17.194678 -0500 EST m=+80.044035751
+ leader 1 is sending 2024-03-01 15:10:17.296006 -0500 EST m=+80.145362667
+ leader 1 is sending 2024-03-01 15:10:17.396781 -0500 EST m=+80.246138417
+ leader 1 is sending 2024-03-01 15:10:17.498221 -0500 EST m=+80.347575959
+ leader 1 is sending 2024-03-01 15:10:17.59887 -0500 EST m=+80.448223834
+ leader 1 is sending 2024-03-01 15:10:17.700007 -0500 EST m=+80.549360001
+ leader 1 is sending 2024-03-01 15:10:17.801247 -0500 EST m=+80.650599209
+ leader 1 is sending 2024-03-01 15:10:17.902494 -0500 EST m=+80.751845584
+ current server0 status1
+current server1 status3
+current server2 status1
+current server0 status1
+leader 1 is sending 2024-03-01 15:10:18.00348 -0500 EST m=+80.852831209
+ leader 1 is sending 2024-03-01 15:10:18.105194 -0500 EST m=+80.954544376
+ leader 1 is sending 2024-03-01 15:10:18.206634 -0500 EST m=+81.055983251
+ leader 1 is sending 2024-03-01 15:10:18.307869 -0500 EST m=+81.157217334
+ leader 1 is sending 2024-03-01 15:10:18.408518 -0500 EST m=+81.257866459
+ leader 1 is sending 2024-03-01 15:10:18.51049 -0500 EST m=+81.359837042
+ leader 1 is sending 2024-03-01 15:10:18.611846 -0500 EST m=+81.461191751
+ leader 1 is sending 2024-03-01 15:10:18.713197 -0500 EST m=+81.562541792
+ leader 1 is sending 2024-03-01 15:10:18.814475 -0500 EST m=+81.663819417
+ leader 1 is sending 2024-03-01 15:10:18.916147 -0500 EST m=+81.765490376
+ leader 1 is sending 2024-03-01 15:10:19.016655 -0500 EST m=+81.865997751
+ leader 1 is sending 2024-03-01 15:10:19.117991 -0500 EST m=+81.967332334
+ leader 1 is sending 2024-03-01 15:10:19.219182 -0500 EST m=+82.068523251
+ leader 1 is sending 2024-03-01 15:10:19.320401 -0500 EST m=+82.169740751
+ leader 1 is sending 2024-03-01 15:10:19.420677 -0500 EST m=+82.270017459
+ leader 1 is sending 2024-03-01 15:10:19.521469 -0500 EST m=+82.370807626
+ leader 1 is sending 2024-03-01 15:10:19.622706 -0500 EST m=+82.472043126
+ leader 1 is sending 2024-03-01 15:10:19.723927 -0500 EST m=+82.573263876
+ leader 1 is sending 2024-03-01 15:10:19.825773 -0500 EST m=+82.675109001
+ leader 1 is sending 2024-03-01 15:10:19.927026 -0500 EST m=+82.776361001
+ leader 1 is sending 2024-03-01 15:10:20.030486 -0500 EST m=+82.879820292
+ leader 1 is sending 2024-03-01 15:10:20.130824 -0500 EST m=+82.980157959
+ leader 1 is sending 2024-03-01 15:10:20.232305 -0500 EST m=+83.081637626
+ leader 1 is sending 2024-03-01 15:10:20.333951 -0500 EST m=+83.183282209
+ leader 1 is sending 2024-03-01 15:10:20.435376 -0500 EST m=+83.284707084
+ leader 1 is sending 2024-03-01 15:10:20.536674 -0500 EST m=+83.386003584
+ leader 1 is sending 2024-03-01 15:10:20.637877 -0500 EST m=+83.487206417
+ leader 1 is sending 2024-03-01 15:10:20.739805 -0500 EST m=+83.589132459
+ leader 1 is sending 2024-03-01 15:10:20.841083 -0500 EST m=+83.690410042
+ leader 1 is sending 2024-03-01 15:10:20.942335 -0500 EST m=+83.791661084
+ leader 1 is sending 2024-03-01 15:10:21.043569 -0500 EST m=+83.892894292
+ leader 1 is sending 2024-03-01 15:10:21.145008 -0500 EST m=+83.994332667
+ leader 1 is sending 2024-03-01 15:10:21.246512 -0500 EST m=+84.095835876
+ leader 1 is sending 2024-03-01 15:10:21.346867 -0500 EST m=+84.196189709
+ current server0 status1
+current server1 status3
+current server2 status1
+current server0 status1
+leader 1 is sending 2024-03-01 15:10:21.448089 -0500 EST m=+84.297411417
+ leader 1 is sending 2024-03-01 15:10:21.54894 -0500 EST m=+84.398261334
+ leader 1 is sending 2024-03-01 15:10:21.650144 -0500 EST m=+84.499464876
+ leader 1 is sending 2024-03-01 15:10:21.751367 -0500 EST m=+84.600686126
+ leader 1 is sending 2024-03-01 15:10:21.852531 -0500 EST m=+84.701849334
+ leader 1 is sending 2024-03-01 15:10:21.952922 -0500 EST m=+84.802239792
+ leader 1 is sending 2024-03-01 15:10:22.054483 -0500 EST m=+84.903799709
+ leader 1 is sending 2024-03-01 15:10:22.155706 -0500 EST m=+85.005022376
+ leader 1 is sending 2024-03-01 15:10:22.257634 -0500 EST m=+85.106948917
+ leader 1 is sending 2024-03-01 15:10:22.358877 -0500 EST m=+85.208191834
+ leader 1 is sending 2024-03-01 15:10:22.461855 -0500 EST m=+85.311168626
+ leader 1 is sending 2024-03-01 15:10:22.563894 -0500 EST m=+85.413206376
+ leader 1 is sending 2024-03-01 15:10:22.664436 -0500 EST m=+85.513747876
+ leader 1 is sending 2024-03-01 15:10:22.765974 -0500 EST m=+85.615284751
+ leader 1 is sending 2024-03-01 15:10:22.867355 -0500 EST m=+85.716665459
+ leader 1 is sending 2024-03-01 15:10:22.968149 -0500 EST m=+85.817458751
+ leader 1 is sending 2024-03-01 15:10:23.069435 -0500 EST m=+85.918743084
+ leader 1 is sending 2024-03-01 15:10:23.170137 -0500 EST m=+86.019444876
+ leader 1 is sending 2024-03-01 15:10:23.271624 -0500 EST m=+86.120931001
+ leader 1 is sending 2024-03-01 15:10:23.373079 -0500 EST m=+86.222384959
+ leader 1 is sending 2024-03-01 15:10:23.47435 -0500 EST m=+86.323655626
+ leader 1 is sending 2024-03-01 15:10:23.575667 -0500 EST m=+86.424971709
+ leader 1 is sending 2024-03-01 15:10:23.67681 -0500 EST m=+86.526113459
+ leader 1 is sending 2024-03-01 15:10:23.778113 -0500 EST m=+86.627415376
+ leader 1 is sending 2024-03-01 15:10:23.878443 -0500 EST m=+86.727745084
+ leader 1 is sending 2024-03-01 15:10:23.979627 -0500 EST m=+86.828928417
+ leader 1 is sending 2024-03-01 15:10:24.080126 -0500 EST m=+86.929425917
+ leader 1 is sending 2024-03-01 15:10:24.18173 -0500 EST m=+87.031029042
+ leader 1 is sending 2024-03-01 15:10:24.282939 -0500 EST m=+87.132237167
+ leader 1 is sending 2024-03-01 15:10:24.38444 -0500 EST m=+87.233737626
+ leader 1 is sending 2024-03-01 15:10:24.4858 -0500 EST m=+87.335096917
+ leader 1 is sending 2024-03-01 15:10:24.586955 -0500 EST m=+87.436250501
+ leader 1 is sending 2024-03-01 15:10:24.688299 -0500 EST m=+87.537594167
+ leader 1 is sending 2024-03-01 15:10:24.789884 -0500 EST m=+87.639178459
+ leader 1 is sending 2024-03-01 15:10:24.891859 -0500 EST m=+87.741151876
+ current server0 status1
+current server1 status3
+current server2 status1
+current server0 status1
+--- FAIL: TestConcurrentStarts3B (14.55s)
+    test_test.go:449: term changed too often
+Test (3B): rejoin of partitioned leader ...
+server 1 starts election
+server: 2 term:2 Voted: 1
+server: 0 term:2 Voted: 1
+server:1 Term:2 is leader
+ leader 1 is sending 2024-03-01 15:10:25.169856 -0500 EST m=+88.019148542
+ leader 1 is sending 2024-03-01 15:10:25.272252 -0500 EST m=+88.121542501
+ leader 1 is sending 2024-03-01 15:10:25.373751 -0500 EST m=+88.223039959
+ leader 1 is sending 2024-03-01 15:10:25.47431 -0500 EST m=+88.323598626
+ leader 1 is sending 2024-03-01 15:10:25.575471 -0500 EST m=+88.424758459
+ leader 1 is sending 2024-03-01 15:10:25.675833 -0500 EST m=+88.525119376
+ leader 1 is sending 2024-03-01 15:10:25.776971 -0500 EST m=+88.626256959
+ leader 1 is sending 2024-03-01 15:10:25.878122 -0500 EST m=+88.727407126
+ leader 1 is sending 2024-03-01 15:10:25.978492 -0500 EST m=+88.827776376
+ leader 1 is sending 2024-03-01 15:10:26.079703 -0500 EST m=+88.928986626
+ leader 1 is sending 2024-03-01 15:10:26.181128 -0500 EST m=+89.030410542
+ leader 1 is sending 2024-03-01 15:10:26.282517 -0500 EST m=+89.131798876
+ leader 1 is sending 2024-03-01 15:10:26.384185 -0500 EST m=+89.233466001
+ leader 1 is sending 2024-03-01 15:10:26.488736 -0500 EST m=+89.338016292
+ leader 1 is sending 2024-03-01 15:10:26.589257 -0500 EST m=+89.438535959
+ leader 1 is sending 2024-03-01 15:10:26.690696 -0500 EST m=+89.539975334
+ leader 1 is sending 2024-03-01 15:10:26.792076 -0500 EST m=+89.641353459
+ leader 1 is sending 2024-03-01 15:10:26.894249 -0500 EST m=+89.743525834
+ leader 1 is sending 2024-03-01 15:10:26.996485 -0500 EST m=+89.845760626
+ leader 1 is sending 2024-03-01 15:10:27.097735 -0500 EST m=+89.947010042
+ leader 1 is sending 2024-03-01 15:10:27.199124 -0500 EST m=+90.048398334
+ leader 1 is sending 2024-03-01 15:10:27.300383 -0500 EST m=+90.149655667
+ leader 1 is sending 2024-03-01 15:10:27.401803 -0500 EST m=+90.251075376
+ leader 1 is sending 2024-03-01 15:10:27.503168 -0500 EST m=+90.352438917
+ leader 1 is sending 2024-03-01 15:10:27.604055 -0500 EST m=+90.453325084
+ leader 1 is sending 2024-03-01 15:10:27.705428 -0500 EST m=+90.554697626
+ leader 1 is sending 2024-03-01 15:10:27.806951 -0500 EST m=+90.656220292
+ leader 1 is sending 2024-03-01 15:10:27.907697 -0500 EST m=+90.756965501
+ leader 1 is sending 2024-03-01 15:10:28.009344 -0500 EST m=+90.858610792
+ leader 1 is sending 2024-03-01 15:10:28.111113 -0500 EST m=+90.960379126
+ leader 1 is sending 2024-03-01 15:10:28.211593 -0500 EST m=+91.060858501
+ leader 1 is sending 2024-03-01 15:10:28.311821 -0500 EST m=+91.161085542
+ leader 1 is sending 2024-03-01 15:10:28.413076 -0500 EST m=+91.262340126
+ leader 1 is sending 2024-03-01 15:10:28.518487 -0500 EST m=+91.367750334
+ leader 1 is sending 2024-03-01 15:10:28.618998 -0500 EST m=+91.468259751
+ leader 1 is sending 2024-03-01 15:10:28.720438 -0500 EST m=+91.569699334
+ leader 1 is sending 2024-03-01 15:10:28.821834 -0500 EST m=+91.671094292
+ leader 1 is sending 2024-03-01 15:10:28.926004 -0500 EST m=+91.775263126
+ leader 1 is sending 2024-03-01 15:10:29.027719 -0500 EST m=+91.876977959
+ leader 1 is sending 2024-03-01 15:10:29.1284 -0500 EST m=+91.977658542
+ leader 1 is sending 2024-03-01 15:10:29.229646 -0500 EST m=+92.078902626
+ leader 1 is sending 2024-03-01 15:10:29.330362 -0500 EST m=+92.179618251
+ leader 1 is sending 2024-03-01 15:10:29.431762 -0500 EST m=+92.281017126
+ leader 1 is sending 2024-03-01 15:10:29.533277 -0500 EST m=+92.382532084
+ leader 1 is sending 2024-03-01 15:10:29.635631 -0500 EST m=+92.484884417
+ leader 1 is sending 2024-03-01 15:10:29.736832 -0500 EST m=+92.586084334
+ leader 1 is sending 2024-03-01 15:10:29.837988 -0500 EST m=+92.687240001
+ leader 1 is sending 2024-03-01 15:10:29.938562 -0500 EST m=+92.787813417
+ leader 1 is sending 2024-03-01 15:10:30.038971 -0500 EST m=+92.888221251
+ leader 1 is sending 2024-03-01 15:10:30.140255 -0500 EST m=+92.989504542
+ leader 1 is sending 2024-03-01 15:10:30.241033 -0500 EST m=+93.090281834
+ leader 1 is sending 2024-03-01 15:10:30.341893 -0500 EST m=+93.191140292
+ leader 1 is sending 2024-03-01 15:10:30.442792 -0500 EST m=+93.292038626
+ leader 1 is sending 2024-03-01 15:10:30.54341 -0500 EST m=+93.392656167
+ leader 1 is sending 2024-03-01 15:10:30.644953 -0500 EST m=+93.494198459
+ leader 1 is sending 2024-03-01 15:10:30.745469 -0500 EST m=+93.594713251
+ leader 1 is sending 2024-03-01 15:10:30.845693 -0500 EST m=+93.694937542
+ leader 1 is sending 2024-03-01 15:10:30.947032 -0500 EST m=+93.796274251
+ leader 1 is sending 2024-03-01 15:10:31.048468 -0500 EST m=+93.897710084
+ leader 1 is sending 2024-03-01 15:10:31.150215 -0500 EST m=+93.999456126
+ leader 1 is sending 2024-03-01 15:10:31.251582 -0500 EST m=+94.100822292
+ leader 1 is sending 2024-03-01 15:10:31.352787 -0500 EST m=+94.202025959
+ leader 1 is sending 2024-03-01 15:10:31.45413 -0500 EST m=+94.303368084
+ leader 1 is sending 2024-03-01 15:10:31.55495 -0500 EST m=+94.404187334
+ leader 1 is sending 2024-03-01 15:10:31.656432 -0500 EST m=+94.505668542
+ leader 1 is sending 2024-03-01 15:10:31.757573 -0500 EST m=+94.606809167
+ leader 1 is sending 2024-03-01 15:10:31.858748 -0500 EST m=+94.707982376
+ leader 1 is sending 2024-03-01 15:10:31.961353 -0500 EST m=+94.810587417
+ leader 1 is sending 2024-03-01 15:10:32.062516 -0500 EST m=+94.911748876
+ leader 1 is sending 2024-03-01 15:10:32.164624 -0500 EST m=+95.013856667
+ leader 1 is sending 2024-03-01 15:10:32.2662 -0500 EST m=+95.115431334
+ leader 1 is sending 2024-03-01 15:10:32.367155 -0500 EST m=+95.216385251
+ leader 1 is sending 2024-03-01 15:10:32.467589 -0500 EST m=+95.316818626
+ leader 1 is sending 2024-03-01 15:10:32.568665 -0500 EST m=+95.417893376
+ leader 1 is sending 2024-03-01 15:10:32.669267 -0500 EST m=+95.518495126
+ leader 1 is sending 2024-03-01 15:10:32.769563 -0500 EST m=+95.618790209
+ leader 1 is sending 2024-03-01 15:10:32.870136 -0500 EST m=+95.719362126
+ leader 1 is sending 2024-03-01 15:10:32.971362 -0500 EST m=+95.820587126
+ leader 1 is sending 2024-03-01 15:10:33.072603 -0500 EST m=+95.921827959
+ leader 1 is sending 2024-03-01 15:10:33.173722 -0500 EST m=+96.022946251
+ leader 1 is sending 2024-03-01 15:10:33.277508 -0500 EST m=+96.126730834
+ leader 1 is sending 2024-03-01 15:10:33.379137 -0500 EST m=+96.228359542
+ leader 1 is sending 2024-03-01 15:10:33.480296 -0500 EST m=+96.329517001
+ leader 1 is sending 2024-03-01 15:10:33.582121 -0500 EST m=+96.431341959
+ leader 1 is sending 2024-03-01 15:10:33.683321 -0500 EST m=+96.532540626
+ leader 1 is sending 2024-03-01 15:10:33.785781 -0500 EST m=+96.634999751
+ leader 1 is sending 2024-03-01 15:10:33.887176 -0500 EST m=+96.736393917
+ leader 1 is sending 2024-03-01 15:10:33.988386 -0500 EST m=+96.837603376
+ leader 1 is sending 2024-03-01 15:10:34.091878 -0500 EST m=+96.941093876
+ leader 1 is sending 2024-03-01 15:10:34.193088 -0500 EST m=+97.042302959
+ leader 1 is sending 2024-03-01 15:10:34.294438 -0500 EST m=+97.143652917
+ leader 1 is sending 2024-03-01 15:10:34.397968 -0500 EST m=+97.247181292
+ leader 1 is sending 2024-03-01 15:10:34.498847 -0500 EST m=+97.348059834
+ leader 1 is sending 2024-03-01 15:10:34.599686 -0500 EST m=+97.448897501
+ leader 1 is sending 2024-03-01 15:10:34.702076 -0500 EST m=+97.551287459
+ leader 1 is sending 2024-03-01 15:10:34.802557 -0500 EST m=+97.651767584
+ leader 1 is sending 2024-03-01 15:10:34.904144 -0500 EST m=+97.753353126
+ --- FAIL: TestRejoin3B (10.02s)
+    config.go:601: one(101) failed to reach agreement
+Test (3B): leader backs up quickly over incorrect follower logs ...
+server 0 starts election
+server: 4 term:2 Voted: 0
+server: 2 term:2 Voted: 0
+server:0 Term:2 is leader
+ server: 3 term:2 Voted: 0
+server: 1 term:2 Voted: 0
+leader 0 is sending 2024-03-01 15:10:35.222279 -0500 EST m=+98.071487626
+ leader 0 is sending 2024-03-01 15:10:35.323405 -0500 EST m=+98.172610459
+ leader 0 is sending 2024-03-01 15:10:35.424408 -0500 EST m=+98.273613417
+ leader 0 is sending 2024-03-01 15:10:35.52511 -0500 EST m=+98.374313751
+ leader 0 is sending 2024-03-01 15:10:35.625612 -0500 EST m=+98.474815751
+ leader 0 is sending 2024-03-01 15:10:35.725754 -0500 EST m=+98.574956876
+ leader 0 is sending 2024-03-01 15:10:35.825943 -0500 EST m=+98.675144751
+ leader 0 is sending 2024-03-01 15:10:35.927122 -0500 EST m=+98.776323084
+ leader 0 is sending 2024-03-01 15:10:36.028309 -0500 EST m=+98.877508709
+ leader 0 is sending 2024-03-01 15:10:36.128625 -0500 EST m=+98.977824709
+ leader 0 is sending 2024-03-01 15:10:36.229852 -0500 EST m=+99.079050501
+ leader 0 is sending 2024-03-01 15:10:36.331074 -0500 EST m=+99.180271542
+ leader 0 is sending 2024-03-01 15:10:36.432742 -0500 EST m=+99.281939834
+ leader 0 is sending 2024-03-01 15:10:36.533623 -0500 EST m=+99.382818834
+ leader 0 is sending 2024-03-01 15:10:36.634843 -0500 EST m=+99.484038126
+ leader 0 is sending 2024-03-01 15:10:36.7361 -0500 EST m=+99.585293751
+ leader 0 is sending 2024-03-01 15:10:36.837049 -0500 EST m=+99.686242667
+ leader 0 is sending 2024-03-01 15:10:36.938484 -0500 EST m=+99.787676001
+ leader 0 is sending 2024-03-01 15:10:37.039953 -0500 EST m=+99.889144709
+ leader 0 is sending 2024-03-01 15:10:37.141596 -0500 EST m=+99.990786959
+ leader 0 is sending 2024-03-01 15:10:37.243231 -0500 EST m=+100.092420376
+ leader 0 is sending 2024-03-01 15:10:37.343776 -0500 EST m=+100.192965126
+ leader 0 is sending 2024-03-01 15:10:37.444791 -0500 EST m=+100.293978917
+ leader 0 is sending 2024-03-01 15:10:37.545932 -0500 EST m=+100.395119417
+ leader 0 is sending 2024-03-01 15:10:37.64707 -0500 EST m=+100.496256084
+ leader 0 is sending 2024-03-01 15:10:37.747354 -0500 EST m=+100.596540042
+ leader 0 is sending 2024-03-01 15:10:37.848908 -0500 EST m=+100.698092667
+ leader 0 is sending 2024-03-01 15:10:37.949455 -0500 EST m=+100.798639292
+ leader 0 is sending 2024-03-01 15:10:38.050768 -0500 EST m=+100.899950917
+ leader 0 is sending 2024-03-01 15:10:38.15147 -0500 EST m=+101.000652042
+ leader 0 is sending 2024-03-01 15:10:38.252418 -0500 EST m=+101.101600667
+ leader 0 is sending 2024-03-01 15:10:38.353157 -0500 EST m=+101.202338792
+ leader 0 is sending 2024-03-01 15:10:38.455421 -0500 EST m=+101.304600417
+ leader 0 is sending 2024-03-01 15:10:38.556768 -0500 EST m=+101.405947042
+ leader 0 is sending 2024-03-01 15:10:38.658942 -0500 EST m=+101.508119584
+ leader 0 is sending 2024-03-01 15:10:38.760373 -0500 EST m=+101.609550501
+ leader 0 is sending 2024-03-01 15:10:38.861871 -0500 EST m=+101.711047376
+ leader 0 is sending 2024-03-01 15:10:38.963301 -0500 EST m=+101.812477584
+ leader 0 is sending 2024-03-01 15:10:39.063631 -0500 EST m=+101.912805584
+ leader 0 is sending 2024-03-01 15:10:39.163828 -0500 EST m=+102.013002376
+ leader 0 is sending 2024-03-01 15:10:39.266347 -0500 EST m=+102.115519334
+ leader 0 is sending 2024-03-01 15:10:39.367046 -0500 EST m=+102.216217959
+ leader 0 is sending 2024-03-01 15:10:39.470303 -0500 EST m=+102.319473667
+ leader 0 is sending 2024-03-01 15:10:39.573311 -0500 EST m=+102.422481209
+ leader 0 is sending 2024-03-01 15:10:39.674341 -0500 EST m=+102.523510792
+ leader 0 is sending 2024-03-01 15:10:39.774946 -0500 EST m=+102.624114501
+ leader 0 is sending 2024-03-01 15:10:39.875108 -0500 EST m=+102.724276167
+ leader 0 is sending 2024-03-01 15:10:39.976338 -0500 EST m=+102.825505251
+ leader 0 is sending 2024-03-01 15:10:40.077614 -0500 EST m=+102.926780084
+ leader 0 is sending 2024-03-01 15:10:40.178672 -0500 EST m=+103.027836917
+ leader 0 is sending 2024-03-01 15:10:40.279955 -0500 EST m=+103.129119917
+ leader 0 is sending 2024-03-01 15:10:40.381648 -0500 EST m=+103.230811876
+ leader 0 is sending 2024-03-01 15:10:40.483138 -0500 EST m=+103.332300376
+ leader 0 is sending 2024-03-01 15:10:40.584458 -0500 EST m=+103.433619709
+ leader 0 is sending 2024-03-01 15:10:40.685292 -0500 EST m=+103.534453084
+ leader 0 is sending 2024-03-01 15:10:40.786527 -0500 EST m=+103.635686584
+ leader 0 is sending 2024-03-01 15:10:40.890235 -0500 EST m=+103.739394251
+ leader 0 is sending 2024-03-01 15:10:40.990855 -0500 EST m=+103.840013501
+ leader 0 is sending 2024-03-01 15:10:41.092099 -0500 EST m=+103.941256501
+ leader 0 is sending 2024-03-01 15:10:41.193093 -0500 EST m=+104.042249959
+ leader 0 is sending 2024-03-01 15:10:41.294378 -0500 EST m=+104.143534251
+ leader 0 is sending 2024-03-01 15:10:41.394948 -0500 EST m=+104.244103251
+ leader 0 is sending 2024-03-01 15:10:41.495252 -0500 EST m=+104.344406251
+ leader 0 is sending 2024-03-01 15:10:41.595845 -0500 EST m=+104.444998292
+ leader 0 is sending 2024-03-01 15:10:41.700217 -0500 EST m=+104.549369626
+ leader 0 is sending 2024-03-01 15:10:41.801671 -0500 EST m=+104.650822334
+ leader 0 is sending 2024-03-01 15:10:41.902824 -0500 EST m=+104.751975209
+ leader 0 is sending 2024-03-01 15:10:42.004218 -0500 EST m=+104.853367709
+ leader 0 is sending 2024-03-01 15:10:42.104446 -0500 EST m=+104.953596167
+ leader 0 is sending 2024-03-01 15:10:42.205186 -0500 EST m=+105.054334542
+ leader 0 is sending 2024-03-01 15:10:42.305706 -0500 EST m=+105.154853709
+ leader 0 is sending 2024-03-01 15:10:42.407114 -0500 EST m=+105.256261126
+ leader 0 is sending 2024-03-01 15:10:42.507372 -0500 EST m=+105.356517876
+ leader 0 is sending 2024-03-01 15:10:42.608621 -0500 EST m=+105.457765792
+ leader 0 is sending 2024-03-01 15:10:42.709519 -0500 EST m=+105.558666001
+ leader 0 is sending 2024-03-01 15:10:42.810112 -0500 EST m=+105.659255084
+ leader 0 is sending 2024-03-01 15:10:42.910953 -0500 EST m=+105.760095834
+ leader 0 is sending 2024-03-01 15:10:43.011942 -0500 EST m=+105.861083959
+ leader 0 is sending 2024-03-01 15:10:43.112643 -0500 EST m=+105.961783251
+ leader 0 is sending 2024-03-01 15:10:43.21373 -0500 EST m=+106.062869334
+ leader 0 is sending 2024-03-01 15:10:43.314583 -0500 EST m=+106.163722417
+ leader 0 is sending 2024-03-01 15:10:43.415787 -0500 EST m=+106.264925417
+ leader 0 is sending 2024-03-01 15:10:43.517256 -0500 EST m=+106.366393126
+ leader 0 is sending 2024-03-01 15:10:43.618436 -0500 EST m=+106.467572126
+ leader 0 is sending 2024-03-01 15:10:43.718719 -0500 EST m=+106.567854376
+ leader 0 is sending 2024-03-01 15:10:43.819884 -0500 EST m=+106.669019126
+ leader 0 is sending 2024-03-01 15:10:43.921055 -0500 EST m=+106.770189001
+ leader 0 is sending 2024-03-01 15:10:44.022364 -0500 EST m=+106.871496917
+ leader 0 is sending 2024-03-01 15:10:44.125322 -0500 EST m=+106.974454001
+ leader 0 is sending 2024-03-01 15:10:44.225684 -0500 EST m=+107.074816084
+ leader 0 is sending 2024-03-01 15:10:44.32625 -0500 EST m=+107.175380709
+ leader 0 is sending 2024-03-01 15:10:44.427213 -0500 EST m=+107.276342584
+ leader 0 is sending 2024-03-01 15:10:44.530538 -0500 EST m=+107.379666751
+ leader 0 is sending 2024-03-01 15:10:44.632561 -0500 EST m=+107.481689042
+ leader 0 is sending 2024-03-01 15:10:44.733346 -0500 EST m=+107.582472709
+ leader 0 is sending 2024-03-01 15:10:44.833928 -0500 EST m=+107.683054042
+ leader 0 is sending 2024-03-01 15:10:44.934567 -0500 EST m=+107.783692459
+ --- FAIL: TestBackup3B (10.03s)
+    config.go:601: one(1883618505549677922) failed to reach agreement
+Test (3B): RPC counts aren't too high ...
+server 1 starts election
+server: 0 term:2 Voted: 1
+server: 2 term:2 Voted: 1
+server:1 Term:2 is leader
+ leader 1 is sending 2024-03-01 15:10:45.234951 -0500 EST m=+108.084074001
+ leader 1 is sending 2024-03-01 15:10:45.336692 -0500 EST m=+108.185814209
+ leader 1 is sending 2024-03-01 15:10:45.437099 -0500 EST m=+108.286219917
+ current server0 status1
+current server1 status3
+current server2 status1
+leader 1 is sending 2024-03-01 15:10:45.538545 -0500 EST m=+108.387665376
+ leader 1 is sending 2024-03-01 15:10:45.641812 -0500 EST m=+108.490931584
+ leader 1 is sending 2024-03-01 15:10:45.744 -0500 EST m=+108.593118626
+ leader 1 is sending 2024-03-01 15:10:45.845237 -0500 EST m=+108.694354626
+ leader 1 is sending 2024-03-01 15:10:45.946561 -0500 EST m=+108.795678084
+ current server0 status1
+current server1 status3
+current server2 status1
+--- FAIL: TestCount3B (1.04s)
+    test_test.go:619: Start() failed
+Test (3C): basic persistence ...
+server 2 starts election
+server: 0 term:2 Voted: 2
+server: 1 term:2 Voted: 2
+server:2 Term:2 is leader
+ leader 2 is sending 2024-03-01 15:10:46.266174 -0500 EST m=+109.115288542
+ leader 2 is sending 2024-03-01 15:10:46.367367 -0500 EST m=+109.216480126
+ leader 2 is sending 2024-03-01 15:10:46.468576 -0500 EST m=+109.317688584
+ leader 2 is sending 2024-03-01 15:10:46.56925 -0500 EST m=+109.418361876
+ leader 2 is sending 2024-03-01 15:10:46.670437 -0500 EST m=+109.519547542
+ leader 2 is sending 2024-03-01 15:10:46.771675 -0500 EST m=+109.620784751
+ leader 2 is sending 2024-03-01 15:10:46.873159 -0500 EST m=+109.722268667
+ leader 2 is sending 2024-03-01 15:10:46.973537 -0500 EST m=+109.822646001
+ leader 2 is sending 2024-03-01 15:10:47.075689 -0500 EST m=+109.924796334
+ leader 2 is sending 2024-03-01 15:10:47.176642 -0500 EST m=+110.025748542
+ leader 2 is sending 2024-03-01 15:10:47.278107 -0500 EST m=+110.127212709
+ leader 2 is sending 2024-03-01 15:10:47.379373 -0500 EST m=+110.228477751
+ leader 2 is sending 2024-03-01 15:10:47.48052 -0500 EST m=+110.329623709
+ leader 2 is sending 2024-03-01 15:10:47.58185 -0500 EST m=+110.430952876
+ leader 2 is sending 2024-03-01 15:10:47.683098 -0500 EST m=+110.532200751
+ leader 2 is sending 2024-03-01 15:10:47.784533 -0500 EST m=+110.633634751
+ leader 2 is sending 2024-03-01 15:10:47.884766 -0500 EST m=+110.733867459
+ leader 2 is sending 2024-03-01 15:10:47.986374 -0500 EST m=+110.835473667
+ leader 2 is sending 2024-03-01 15:10:48.087222 -0500 EST m=+110.936320542
+ leader 2 is sending 2024-03-01 15:10:48.188367 -0500 EST m=+111.037464709
+ leader 2 is sending 2024-03-01 15:10:48.290605 -0500 EST m=+111.139702126
+ leader 2 is sending 2024-03-01 15:10:48.391635 -0500 EST m=+111.240731042
+ leader 2 is sending 2024-03-01 15:10:48.492212 -0500 EST m=+111.341307542
+ leader 2 is sending 2024-03-01 15:10:48.59338 -0500 EST m=+111.442474834
+ leader 2 is sending 2024-03-01 15:10:48.695136 -0500 EST m=+111.544229709
+ leader 2 is sending 2024-03-01 15:10:48.795808 -0500 EST m=+111.644901209
+ leader 2 is sending 2024-03-01 15:10:48.898405 -0500 EST m=+111.747496667
+ leader 2 is sending 2024-03-01 15:10:48.998958 -0500 EST m=+111.848049042
+ leader 2 is sending 2024-03-01 15:10:49.100139 -0500 EST m=+111.949229792
+ leader 2 is sending 2024-03-01 15:10:49.20138 -0500 EST m=+112.050469709
+ leader 2 is sending 2024-03-01 15:10:49.303589 -0500 EST m=+112.152677584
+ leader 2 is sending 2024-03-01 15:10:49.404856 -0500 EST m=+112.253944209
+ leader 2 is sending 2024-03-01 15:10:49.505793 -0500 EST m=+112.354879876
+ leader 2 is sending 2024-03-01 15:10:49.606594 -0500 EST m=+112.455679834
+ leader 2 is sending 2024-03-01 15:10:49.709921 -0500 EST m=+112.559006834
+ leader 2 is sending 2024-03-01 15:10:49.810769 -0500 EST m=+112.659853084
+ leader 2 is sending 2024-03-01 15:10:49.911224 -0500 EST m=+112.760307876
+ leader 2 is sending 2024-03-01 15:10:50.011661 -0500 EST m=+112.860743542
+ leader 2 is sending 2024-03-01 15:10:50.112913 -0500 EST m=+112.961994959
+ leader 2 is sending 2024-03-01 15:10:50.213993 -0500 EST m=+113.063074084
+ leader 2 is sending 2024-03-01 15:10:50.31499 -0500 EST m=+113.164070292
+ leader 2 is sending 2024-03-01 15:10:50.416149 -0500 EST m=+113.265228584
+ leader 2 is sending 2024-03-01 15:10:50.517366 -0500 EST m=+113.366445001
+ leader 2 is sending 2024-03-01 15:10:50.61861 -0500 EST m=+113.467687834
+ leader 2 is sending 2024-03-01 15:10:50.71986 -0500 EST m=+113.568937209
+ leader 2 is sending 2024-03-01 15:10:50.821248 -0500 EST m=+113.670324042
+ leader 2 is sending 2024-03-01 15:10:50.921424 -0500 EST m=+113.770499584
+ leader 2 is sending 2024-03-01 15:10:51.022601 -0500 EST m=+113.871675126
+ leader 2 is sending 2024-03-01 15:10:51.122848 -0500 EST m=+113.971922042
+ leader 2 is sending 2024-03-01 15:10:51.223751 -0500 EST m=+114.072823459
+ leader 2 is sending 2024-03-01 15:10:51.326203 -0500 EST m=+114.175274584
+ leader 2 is sending 2024-03-01 15:10:51.427367 -0500 EST m=+114.276437626
+ leader 2 is sending 2024-03-01 15:10:51.527603 -0500 EST m=+114.376673459
+ leader 2 is sending 2024-03-01 15:10:51.62883 -0500 EST m=+114.477899667
+ leader 2 is sending 2024-03-01 15:10:51.729363 -0500 EST m=+114.578431876
+ leader 2 is sending 2024-03-01 15:10:51.830495 -0500 EST m=+114.679563126
+ leader 2 is sending 2024-03-01 15:10:51.931813 -0500 EST m=+114.780880167
+ leader 2 is sending 2024-03-01 15:10:52.033015 -0500 EST m=+114.882081167
+ leader 2 is sending 2024-03-01 15:10:52.134217 -0500 EST m=+114.983282167
+ leader 2 is sending 2024-03-01 15:10:52.235417 -0500 EST m=+115.084481251
+ leader 2 is sending 2024-03-01 15:10:52.336614 -0500 EST m=+115.185677292
+ leader 2 is sending 2024-03-01 15:10:52.437189 -0500 EST m=+115.286251042
+ leader 2 is sending 2024-03-01 15:10:52.538011 -0500 EST m=+115.387073084
+ leader 2 is sending 2024-03-01 15:10:52.639175 -0500 EST m=+115.488236292
+ leader 2 is sending 2024-03-01 15:10:52.740618 -0500 EST m=+115.589678417
+ leader 2 is sending 2024-03-01 15:10:52.842042 -0500 EST m=+115.691101292
+ leader 2 is sending 2024-03-01 15:10:52.943348 -0500 EST m=+115.792406501
+ leader 2 is sending 2024-03-01 15:10:53.044564 -0500 EST m=+115.893621417
+ leader 2 is sending 2024-03-01 15:10:53.145409 -0500 EST m=+115.994466001
+ leader 2 is sending 2024-03-01 15:10:53.246654 -0500 EST m=+116.095709334
+ leader 2 is sending 2024-03-01 15:10:53.347937 -0500 EST m=+116.196992126
+ leader 2 is sending 2024-03-01 15:10:53.448601 -0500 EST m=+116.297654959
+ leader 2 is sending 2024-03-01 15:10:53.549294 -0500 EST m=+116.398347251
+ leader 2 is sending 2024-03-01 15:10:53.650476 -0500 EST m=+116.499528751
+ leader 2 is sending 2024-03-01 15:10:53.751783 -0500 EST m=+116.600834917
+ leader 2 is sending 2024-03-01 15:10:53.852697 -0500 EST m=+116.701748001
+ leader 2 is sending 2024-03-01 15:10:53.953621 -0500 EST m=+116.802671084
+ leader 2 is sending 2024-03-01 15:10:54.054472 -0500 EST m=+116.903521292
+ leader 2 is sending 2024-03-01 15:10:54.154771 -0500 EST m=+117.003819876
+ leader 2 is sending 2024-03-01 15:10:54.255401 -0500 EST m=+117.104448959
+ leader 2 is sending 2024-03-01 15:10:54.355767 -0500 EST m=+117.204813792
+ leader 2 is sending 2024-03-01 15:10:54.456971 -0500 EST m=+117.306016876
+ leader 2 is sending 2024-03-01 15:10:54.558235 -0500 EST m=+117.407280001
+ leader 2 is sending 2024-03-01 15:10:54.660697 -0500 EST m=+117.509740709
+ leader 2 is sending 2024-03-01 15:10:54.761842 -0500 EST m=+117.610885001
+ leader 2 is sending 2024-03-01 15:10:54.862321 -0500 EST m=+117.711363209
+ leader 2 is sending 2024-03-01 15:10:54.963494 -0500 EST m=+117.812535542
+ leader 2 is sending 2024-03-01 15:10:55.064589 -0500 EST m=+117.913629417
+ leader 2 is sending 2024-03-01 15:10:55.165914 -0500 EST m=+118.014953251
+ leader 2 is sending 2024-03-01 15:10:55.267352 -0500 EST m=+118.116391251
+ leader 2 is sending 2024-03-01 15:10:55.368542 -0500 EST m=+118.217580126
+ leader 2 is sending 2024-03-01 15:10:55.469767 -0500 EST m=+118.318804292
+ leader 2 is sending 2024-03-01 15:10:55.57132 -0500 EST m=+118.420356709
+ leader 2 is sending 2024-03-01 15:10:55.672916 -0500 EST m=+118.521952209
+ leader 2 is sending 2024-03-01 15:10:55.773513 -0500 EST m=+118.622548417
+ leader 2 is sending 2024-03-01 15:10:55.874503 -0500 EST m=+118.723536917
+ leader 2 is sending 2024-03-01 15:10:55.975631 -0500 EST m=+118.824664292
+ leader 2 is sending 2024-03-01 15:10:56.075748 -0500 EST m=+118.924780042
+ --- FAIL: TestPersist13C (10.05s)
+    config.go:601: one(11) failed to reach agreement
+Test (3C): more persistence ...
+server 3 starts election
+server: 4 term:2 Voted: 3
+server: 2 term:2 Voted: 3
+server: 1 term:2 Voted: 3
+server: 0 term:2 Voted: 3
+server:3 Term:2 is leader
+ leader 3 is sending 2024-03-01 15:10:56.335869 -0500 EST m=+119.184899209
+ leader 3 is sending 2024-03-01 15:10:56.43636 -0500 EST m=+119.285389459
+ leader 3 is sending 2024-03-01 15:10:56.536501 -0500 EST m=+119.385529626
+ leader 3 is sending 2024-03-01 15:10:56.63668 -0500 EST m=+119.485707167
+ leader 3 is sending 2024-03-01 15:10:56.737182 -0500 EST m=+119.586208917
+ leader 3 is sending 2024-03-01 15:10:56.838314 -0500 EST m=+119.687339709
+ leader 3 is sending 2024-03-01 15:10:56.939388 -0500 EST m=+119.788412501
+ leader 3 is sending 2024-03-01 15:10:57.039701 -0500 EST m=+119.888725126
+ leader 3 is sending 2024-03-01 15:10:57.140078 -0500 EST m=+119.989100917
+ leader 3 is sending 2024-03-01 15:10:57.240515 -0500 EST m=+120.089537626
+ leader 3 is sending 2024-03-01 15:10:57.341407 -0500 EST m=+120.190428334
+ leader 3 is sending 2024-03-01 15:10:57.441979 -0500 EST m=+120.290999292
+ leader 3 is sending 2024-03-01 15:10:57.543099 -0500 EST m=+120.392119042
+ leader 3 is sending 2024-03-01 15:10:57.644264 -0500 EST m=+120.493282459
+ leader 3 is sending 2024-03-01 15:10:57.745176 -0500 EST m=+120.594193584
+ leader 3 is sending 2024-03-01 15:10:57.845456 -0500 EST m=+120.694473709
+ leader 3 is sending 2024-03-01 15:10:57.946583 -0500 EST m=+120.795599709
+ leader 3 is sending 2024-03-01 15:10:58.047784 -0500 EST m=+120.896799501
+ leader 3 is sending 2024-03-01 15:10:58.148861 -0500 EST m=+120.997875751
+ leader 3 is sending 2024-03-01 15:10:58.249425 -0500 EST m=+121.098438959
+ signal: interrupt
+FAIL	6.5840/raft	121.461s
