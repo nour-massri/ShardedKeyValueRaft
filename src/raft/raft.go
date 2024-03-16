@@ -23,11 +23,13 @@ package raft
 import (
 	//	"bytes"
 
+	"bytes"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	//	"6.5840/labgob"
+	"6.5840/labgob"
 	"6.5840/labrpc"
 )
 
@@ -117,7 +119,7 @@ func (rf *Raft) commitLogs() {
 		}
 
 		rf.lastApplied++
-		DPrintf("server:%v last applied:%v\n", rf.me, rf.lastApplied)
+		//DPrintf("server:%v last applied:%v\n", rf.me, rf.lastApplied)
 
 	}
 }
@@ -127,7 +129,8 @@ func (rf *Raft) isCandidateAtLeastUpToDate(LastLogIndex int, LastLogTerm int)boo
 	// if(LastLogTerm > rf.getLastLogTerm()){
 	// 	return true
 	// } else 
-	DPrintf("current term:%v index:%v given term%v index%v\n", rf.getLastLogTerm(), rf.getLastLogIndex(), LastLogTerm, LastLogIndex)
+
+	//DPrintf("current term:%v index:%v given term%v index%v\n", rf.getLastLogTerm(), rf.getLastLogIndex(), LastLogTerm, LastLogIndex)
 	if(LastLogTerm == rf.getLastLogTerm() ){
 		return LastLogIndex >= rf.getLastLogIndex()
 	}
@@ -184,7 +187,7 @@ func (rf *Raft) ToLeader(){
 		rf.nextIndex[i] = rf.getLastLogIndex()+1
 		rf.matchIndex[i] = 0
 	}
-	DPrintf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
+	//DPrintf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
 
 
 }
@@ -212,37 +215,32 @@ func (rf *Raft) GetState() (int, bool) {
 // after you've implemented snapshots, pass the current snapshot
 // (or nil if there's not yet a snapshot).
 func (rf *Raft) persist() {
-	// Your code here (3C).
-	// Example:
-	// w := new(bytes.Buffer)
-	// e := labgob.NewEncoder(w)
-	// e.Encode(rf.xxx)
-	// e.Encode(rf.yyy)
-	// raftstate := w.Bytes()
-	// rf.persister.Save(raftstate, nil)
+	// Your code here (2C).
+	w := new(bytes.Buffer)
+	e := labgob.NewEncoder(w)
+	if e.Encode(rf.currentTerm) != nil ||
+		e.Encode(rf.votedFor) != nil || e.Encode(rf.log) != nil {
+		panic("failed to encode raft persistent state")
+	}
+	data := w.Bytes()
+	rf.persister.Save(data, nil)
 }
 
 
 // restore previously persisted state.
 func (rf *Raft) readPersist(data []byte) {
-	if data == nil || len(data) < 1 { // bootstrap without any state?
+	// bootstrap without any state?
+	if data == nil || len(data) < 1 {
 		return
 	}
-	// Your code here (3C).
-	// Example:
-	// r := bytes.NewBuffer(data)
-	// d := labgob.NewDecoder(r)
-	// var xxx
-	// var yyy
-	// if d.Decode(&xxx) != nil ||
-	//    d.Decode(&yyy) != nil {
-	//   error...
-	// } else {
-	//   rf.xxx = xxx
-	//   rf.yyy = yyy
-	// }
+	// Your code here (2C).
+	r := bytes.NewBuffer(data)
+	d := labgob.NewDecoder(r)
+	if d.Decode(&rf.currentTerm) != nil ||
+		d.Decode(&rf.votedFor) != nil || d.Decode(&rf.log) != nil {
+		panic("failed to decode raft persistent state")
+	}
 }
-
 
 // the service says it has created a snapshot that has
 // all info up to and including index. this means the
@@ -372,6 +370,9 @@ type AppendEntriesReply struct {
 	// Your data here (3A).
 	Term int
 	Success bool
+	XTerm  int //term in the conflicting entry (if any)
+    XIndex int //index of first entry with that term (if any)
+    XLen   int// log length
 }
 
 // example AppendEntries RPC handler.
@@ -387,18 +388,48 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 
 	if args.Term < rf.currentTerm {
- 		DPrintf("failed 1, leader %v term=%v send to follower %v term=%v\n", args.LeaderId,args.Term, rf.me, rf.currentTerm)
+ 		//DPrintf("failed 1, leader %v term=%v send to follower %v term=%v\n", args.LeaderId,args.Term, rf.me, rf.currentTerm)
 
 		reply.Success = false
+		reply.XIndex = -1
+		reply.XTerm = -1
+		reply.XLen = len(rf.log)
+
 		//1. Reply false if term < currentTerm (§5.1)
-	} else if(rf.getLastLogIndex() < args.PrevLogIndex || rf.log[args.PrevLogIndex].Term != args.PrevLogTerm){
- 		DPrintf("failed 2,3: Leader %v send to follower %v rf.lastindex=%v, args.previndex=%v\n",args.LeaderId, rf.me, rf.getLastLogIndex(), args.PrevLogIndex)
-		reply.Success = false
-		rf.lastHeartBeat = time.Now()
-
+	} else if(rf.getLastLogIndex() < args.PrevLogIndex){
 		//2. Reply false if log doesn’t contain an entry at prevLogIndex
 		//whose term matches prevLogTerm (§5.3)
-	}else {
+
+		//follower log shorter than leader's
+ 		//DPrintf("failed 2: Leader %v send to follower %v rf.lastindex=%v, args.previndex=%v\n",args.LeaderId, rf.me, rf.getLastLogIndex(), args.PrevLogIndex)
+		reply.Success = false
+		rf.lastHeartBeat = time.Now()
+		reply.XIndex = rf.getLastLogIndex()
+		reply.XLen = len(rf.log)
+		reply.XTerm = -1
+
+	}else if(rf.log[args.PrevLogIndex].Term != args.PrevLogTerm){
+		//2. Reply false if log doesn’t contain an entry at prevLogIndex
+	   //whose term matches prevLogTerm (§5.3)
+
+
+		//conflict 
+		reply.XTerm = rf.log[args.PrevLogIndex].Term
+		reply.XLen = len(rf.log)
+		for i := args.PrevLogIndex; i >= 0 && rf.log[i].Term == rf.log[args.PrevLogIndex].Term; i-- {
+			reply.XIndex = i
+		}
+
+		//DPrintf("failed 2: Leader %v send to follower %v rf.lastindex=%v, args.previndex=%v\n",args.LeaderId, rf.me, rf.getLastLogIndex(), args.PrevLogIndex)
+	   reply.Success = false
+	   rf.lastHeartBeat = time.Now()
+
+
+   } else {
+
+		reply.XIndex = -1
+		reply.XTerm = -1
+		reply.XLen = len(rf.log)
 		reply.Success = true
 		rf.lastHeartBeat = time.Now()
 
@@ -419,11 +450,12 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 // 		if j < len(args.LogEntries) {
 // 			DPrintf("Leader %v term=%v overwriting logs at follower %v term=%v: len(rf.log)=%v i=%v len(args.entries)=%v j=%v\n", args.LeaderId, args.Term, rf.me, rf.currentTerm, len(rf.log), i, len(args.LogEntries),j)
 // 		}
+
 		//5. If leaderCommit > commitIndex, set commitIndex =
 		//min(leaderCommit, index of last new entry)
 		if args.LeaderCommit > rf.commitIndex{
 			rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIndex())
-			DPrintf("follower %v commit index:%v\n", rf.me, rf.commitIndex)
+			//DPrintf("follower %v commit index:%v\n", rf.me, rf.commitIndex)
 			go rf.commitLogs()
 		}
 	}
@@ -457,9 +489,76 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 // capitalized all field names in structs passed over RPC, and
 // that the caller passes the address of the reply struct with &, not
 // the struct itself.
-func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
-	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
-	return ok
+func (rf *Raft) sendAppendEntries(peer int){
+
+	rf.mu.Lock()
+	if rf.serverState != Leader{
+		rf.mu.Unlock()
+		return 
+	}
+	args := AppendEntriesArgs{Term: rf.currentTerm, 
+		LeaderId: rf.me, 
+		PrevLogIndex: rf.nextIndex[peer] - 1,
+		PrevLogTerm: rf.log[rf.nextIndex[peer] - 1].Term,
+		LogEntries: rf.log[rf.nextIndex[peer]:],
+		LeaderCommit: rf.commitIndex}
+	
+	reply := AppendEntriesReply{}
+	rf.mu.Unlock()
+
+	ok := rf.peers[peer].Call("Raft.AppendEntries", &args, &reply)
+	if !ok {
+		return
+	}
+
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	if reply.Term > rf.currentTerm {
+		rf.ToFollower(reply.Term)
+	}
+	if reply.Term < rf.currentTerm || rf.serverState != Leader || args.Term != rf.currentTerm {
+		return
+	}
+
+	if reply.Success{
+		rf.matchIndex[peer] = max(rf.matchIndex[peer], args.PrevLogIndex + len(args.LogEntries))
+		rf.nextIndex[peer] = rf.matchIndex[peer] + 1
+
+	} else{
+		if reply.XTerm >= 0{ //follower's log is at least as long as leader's log
+			leaderLastIndexForXTerm := rf.getLastLogIndex()
+			for ;leaderLastIndexForXTerm >= 0 && rf.log[leaderLastIndexForXTerm].Term != reply.XTerm; leaderLastIndexForXTerm--{
+
+			}
+			if leaderLastIndexForXTerm == -1{//Case 1: leader doesn't have XTerm:
+				rf.nextIndex[peer] = reply.XIndex
+			} else {//Case 2: leader has XTerm:
+				rf.nextIndex[peer] = leaderLastIndexForXTerm
+			}
+		} else {  //Case 3: follower's log is too short:
+			rf.nextIndex[peer] = reply.XLen
+		}
+		rf.matchIndex[peer] = rf.nextIndex[peer]  - 1
+
+	}
+
+	for n := rf.getLastLogIndex(); n >= rf.commitIndex; n-- {
+		cnt := 1
+		if rf.log[n].Term != rf.currentTerm {
+			continue
+		}
+		for i := range(rf.peers){
+			if i != rf.me && rf.matchIndex[i] >= n {
+				cnt++
+			}
+		}
+		if cnt > len(rf.peers) / 2 {
+			rf.commitIndex = n
+			go rf.commitLogs()
+			break;
+		}
+	}
+	//DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)					
 }
 
 
@@ -524,7 +623,7 @@ func (rf *Raft) ElectionTicker() {
 			time.Sleep(getRandtime(150, 250))
 			continue
 		}
-		DPrintf("server %v starts election\n", rf.me)
+		//DPrintf("server %v starts election\n", rf.me)
 		//start elections
 		rf.ToCandidate()
 		//reset the election timeout 
@@ -550,46 +649,6 @@ func (rf *Raft) ElectionTicker() {
 	}
 }
 
-func (rf *Raft) HeartBeatTicker() {
-
-	for !rf.killed(){
-		// Your code here (3A)
-		rf.mu.Lock()
-		if rf.serverState != Leader{
-			rf.mu.Unlock()
-			time.Sleep(getRandtime(100, 150))
-			continue
-		}
-		//DPrintf("leader %v is sending %v\n ", rf.me, time.Now())
-		//send heartbeats
-		//reset the election timeout 
-		rf.lastHeartBeat = time.Now()
-
-		rf.mu.Unlock()
-		for peer := 0; peer < len(rf.peers); peer++{
-			if peer == rf.me{
-				continue
-			}
-			rf.mu.Lock()
-			//DPrintf("asdf:%v %v\n", peer,rf.nextIndex[peer] )
-			appendEntriesArgs := AppendEntriesArgs{Term: rf.currentTerm, 
-				LeaderId: rf.me, 
-				PrevLogIndex: rf.nextIndex[peer] - 1,
-				PrevLogTerm: rf.log[rf.nextIndex[peer] - 1].Term,
-				LogEntries: []LogEntry{},
-				LeaderCommit: rf.commitIndex}
-			rf.mu.Unlock()
-			go rf.sendAppendEntries(peer, &appendEntriesArgs, &AppendEntriesReply{})
-		}
-		
-		
-		// pause for a random amount of time between 100 and 150
-		// milliseconds.
-		time.Sleep(getRandtime(100, 100))
-	}
-}
-
-
 //leader operatinos goroutines:
 //If last log index ≥ nextIndex for a follower: send
 // AppendEntries RPC with log entries starting at nextIndex
@@ -603,16 +662,14 @@ func (rf *Raft) HeartBeatTicker() {
 func (rf *Raft) LeaderAppendEntriesTicker() {
 
 	for !rf.killed(){
-		// Your code here (3A)
-
 
 		rf.mu.Lock()
 		if rf.serverState != Leader{
 			rf.mu.Unlock()
-			time.Sleep(getRandtime(100, 140))
+			time.Sleep(getRandtime(100, 100))
 			continue
 		}
-		DPrintf("go append entries from server:%v commit%v lastapplied%v\n\n", rf.me, rf.commitIndex, rf.lastApplied)
+		//DPrintf("go append entries from server:%v commit%v lastapplied%v\n\n", rf.me, rf.commitIndex, rf.lastApplied)
 
 		//DPrintf("leader %v is sending %v\n ", rf.me, time.Now())
 		//send heartbeats
@@ -625,63 +682,7 @@ func (rf *Raft) LeaderAppendEntriesTicker() {
 			if peer == rf.me{
 				continue
 			}
-			go func(peer int){
-				rf.mu.Lock()
-				if rf.serverState != Leader{
-					rf.mu.Unlock()
-					return 
-				}
-				args := AppendEntriesArgs{Term: rf.currentTerm, 
-					LeaderId: rf.me, 
-					PrevLogIndex: rf.nextIndex[peer] - 1,
-					PrevLogTerm: rf.log[rf.nextIndex[peer] - 1].Term,
-					LogEntries: rf.log[rf.nextIndex[peer]:],
-					LeaderCommit: rf.commitIndex}
-				
-				reply := AppendEntriesReply{}
-				rf.mu.Unlock()
-
-				ok := rf.sendAppendEntries(peer, &args, &reply)
-				if !ok{
-					return 
-				}
-				rf.mu.Lock()
-				defer rf.mu.Unlock()
-				if reply.Term > rf.currentTerm {
-					rf.ToFollower(reply.Term)
-				}
-				if rf.serverState != Leader {
-					return
-				}
-
-				if !reply.Success{
-					rf.nextIndex[peer] --
-					DPrintf("%v %v", peer, rf.nextIndex[peer])
-				} else{
-					rf.nextIndex[peer] = args.PrevLogIndex + len(args.LogEntries) + 1
-					rf.matchIndex[peer] = max(rf.matchIndex[peer],args.PrevLogIndex + len(args.LogEntries) )
-					DPrintf("replication from %v to %v with match %v\n", rf.me, peer, rf.matchIndex[peer])
-				}
-
-				for n := rf.getLastLogIndex(); n >= rf.commitIndex; n-- {
-					cnt := 1
-					if rf.log[n].Term != rf.currentTerm {
-						continue
-					}
-					for i := range(rf.peers){
-						if i != rf.me && rf.matchIndex[i] >= n {
-							cnt++
-						}
-					}
-					if cnt > len(rf.peers) / 2 {
-						rf.commitIndex = n
-						go rf.commitLogs()
-						break;
-					}
-				}
-				DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)					
-				
-			}(peer)
+			go rf.sendAppendEntries(peer);
 		}
 		
 		// pause for a random amount of time between 100 and 150
@@ -732,7 +733,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// start ticker goroutine to start elections
 	go rf.ElectionTicker()
-	//go rf.HeartBeatTicker()
 	go rf.LeaderAppendEntriesTicker()
 	
 	return rf
