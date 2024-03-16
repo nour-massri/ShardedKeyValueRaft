@@ -126,19 +126,13 @@ func (rf *Raft) commitLogs() {
 
 //lock must be held before calling this
 func (rf *Raft) isCandidateAtLeastUpToDate(LastLogIndex int, LastLogTerm int)bool{
-	// if(LastLogTerm > rf.getLastLogTerm()){
-	// 	return true
-	// } else 
 
 	//DPrintf("current term:%v index:%v given term%v index%v\n", rf.getLastLogTerm(), rf.getLastLogIndex(), LastLogTerm, LastLogIndex)
 	if(LastLogTerm == rf.getLastLogTerm() ){
 		return LastLogIndex >= rf.getLastLogIndex()
 	}
 	return LastLogTerm > rf.getLastLogTerm()
-	// 	return true
-	// } else{
-	// 	return false
-	// }
+
 }
 
 //lock must be held before calling this
@@ -153,10 +147,9 @@ func (rf *Raft) getLastLogTerm()int {
 
 //lock must be held before calling this
 func (rf *Raft) ToFollower(Term int){
-	if rf.serverState == Leader{
-		DPrintf("Leader %v stepped down from preTerm%v to newTerm%v\n", 
-				rf.me, rf.currentTerm, Term)
-	}
+	// if rf.serverState == Leader{
+	// 	DPrintf("Leader %v stepped down from preTerm%v to newTerm%v\n", rf.me, rf.currentTerm, Term)
+	// }
 	rf.currentTerm = Term
 	rf.votedFor = -1
 	rf.serverState = Follower
@@ -216,14 +209,12 @@ func (rf *Raft) GetState() (int, bool) {
 // (or nil if there's not yet a snapshot).
 func (rf *Raft) persist() {
 	// Your code here (2C).
-	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
-	if e.Encode(rf.currentTerm) != nil ||
-		e.Encode(rf.votedFor) != nil || e.Encode(rf.log) != nil {
-		panic("failed to encode raft persistent state")
-	}
-	data := w.Bytes()
-	rf.persister.Save(data, nil)
+	buffer := new(bytes.Buffer)
+	encoder := labgob.NewEncoder(buffer)
+	encoder.Encode(rf.currentTerm) 
+	encoder.Encode(rf.votedFor)
+	encoder.Encode(rf.log) 
+	rf.persister.Save(buffer.Bytes(), nil)
 }
 
 
@@ -234,12 +225,11 @@ func (rf *Raft) readPersist(data []byte) {
 		return
 	}
 	// Your code here (2C).
-	r := bytes.NewBuffer(data)
-	d := labgob.NewDecoder(r)
-	if d.Decode(&rf.currentTerm) != nil ||
-		d.Decode(&rf.votedFor) != nil || d.Decode(&rf.log) != nil {
-		panic("failed to decode raft persistent state")
-	}
+	buffer := bytes.NewBuffer(data)
+	decoder := labgob.NewDecoder(buffer)
+	decoder.Decode(&rf.currentTerm) 
+	decoder.Decode(&rf.votedFor) 
+	decoder.Decode(&rf.log)
 }
 
 // the service says it has created a snapshot that has
@@ -275,7 +265,8 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	
+	defer rf.persist()
+
 	reply.Term = rf.currentTerm
 
 	if args.Term > rf.currentTerm{
@@ -331,6 +322,8 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 	}
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
+
 	if args.Term > rf.currentTerm{
 		rf.ToFollower(args.Term)
 	}
@@ -380,6 +373,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// Your code here (3A, 3B).
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
 
 	reply.Term = rf.currentTerm
 
@@ -513,6 +507,8 @@ func (rf *Raft) sendAppendEntries(peer int){
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
+
 	if reply.Term > rf.currentTerm {
 		rf.ToFollower(reply.Term)
 	}
@@ -579,6 +575,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer 	rf.persist()
+
 	if(rf.serverState != Leader){
 		return -1, rf.currentTerm, false
 	}
@@ -626,6 +624,8 @@ func (rf *Raft) ElectionTicker() {
 		//DPrintf("server %v starts election\n", rf.me)
 		//start elections
 		rf.ToCandidate()
+		rf.persist()
+
 		//reset the election timeout 
 		rf.lastHeartBeat = time.Now()
 
