@@ -616,9 +616,9 @@ func (rf *Raft) ElectionTicker() {
 		lastHeartBeat := rf.lastHeartBeat
 		serverState := rf.serverState
 
-		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(100,150){
+		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(400,600){
 			rf.mu.Unlock()
-			time.Sleep(getRandtime(150, 250))
+			time.Sleep(getRandtime(200, 250))
 			continue
 		}
 		//DPrintf("server %v starts election\n", rf.me)
@@ -645,7 +645,7 @@ func (rf *Raft) ElectionTicker() {
 		
 		// pause for a random amount of time between 150 and 250
 		// milliseconds.
-		time.Sleep(getRandtime(100, 150))
+		time.Sleep(getRandtime(200, 250))
 	}
 }
 
@@ -666,7 +666,7 @@ func (rf *Raft) LeaderAppendEntriesTicker() {
 		rf.mu.Lock()
 		if rf.serverState != Leader{
 			rf.mu.Unlock()
-			time.Sleep(getRandtime(100, 100))
+			time.Sleep(getRandtime(120, 150))
 			continue
 		}
 		//DPrintf("go append entries from server:%v commit%v lastapplied%v\n\n", rf.me, rf.commitIndex, rf.lastApplied)
@@ -687,7 +687,7 @@ func (rf *Raft) LeaderAppendEntriesTicker() {
 		
 		// pause for a random amount of time between 100 and 150
 		// milliseconds.
-		time.Sleep(getRandtime(100, 100))
+		time.Sleep(getRandtime(120, 150))
 	}
 }
 
