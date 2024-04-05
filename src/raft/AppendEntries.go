@@ -417,7 +417,7 @@ func (rf *Raft) broadcastHeartbeat() {
 				} else {
 					// decrement nextIndex and retry
 					index := reply.ConflictIndex
-					if reply.ConflictTerm != NULL {
+					if reply.ConflictTerm != -1 {
 						logSize := rf.logLen()
 						for i := rf.lastIncludedIndex; i < logSize; i++ {
 							if rf.getLogEntry(i).Term != reply.ConflictTerm {

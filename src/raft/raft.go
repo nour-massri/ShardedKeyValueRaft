@@ -343,6 +343,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 package raft
 
+//VIP NOTES:
+//first index in log is 1
+
 //
 // this is an outline of the API that raft must expose to
 // the service (or tester). see comments below for
@@ -361,15 +364,23 @@ package raft
 //
 
 import (
-	"bytes"
-	"fmt"
+	//	"bytes"
+
 	"math/rand"
+	"sort"
 	"sync"
 	"time"
 
-	"6.5840/labgob"
+	//	"6.5840/labgob"
+
 	"6.5840/labrpc"
 )
+
+
+type LogEntry struct {
+	Term    int
+	Command interface{}
+}
 
 type ServerState int
 
@@ -378,24 +389,16 @@ const (
 	Candidate
 	Leader
 )
-const NULL int = -1
 
-type LogEntry struct {
-	Term    int
-	Command interface{}
-}
-
-//
 // as each Raft peer becomes aware that successive log entries are
 // committed, the peer should send an ApplyMsg to the service (or
 // tester) on the same server, via the applyCh passed to Make(). set
 // CommandValid to true to indicate that the ApplyMsg contains a newly
 // committed log entry.
 //
-// in Lab 3 you'll want to send other kinds of messages (e.g.,
-// snapshots) on the applyCh; at that point you can add fields to
-// ApplyMsg, but set CommandValid to false for these other uses.
-//
+// in part 3D you'll want to send other kinds of messages (e.g.,
+// snapshots) on the applyCh, but set CommandValid to false for these
+// other uses.
 type ApplyMsg struct {
 	CommandValid bool
 	Command      interface{}
@@ -407,50 +410,59 @@ type ApplyMsg struct {
 	SnapshotTerm  int
 	SnapshotIndex int
 }
-//
+
 // A Go object implementing a single Raft peer.
-//
 type Raft struct {
 	mu        sync.Mutex          // Lock to protect shared access to this peer's state
 	peers     []*labrpc.ClientEnd // RPC end points of all peers
 	persister *Persister          // Object to hold this peer's persisted state
 	me        int                 // this peer's index into peers[]
+	dead      int32               // set by Kill()
 
-	// Your data here (2A, 2B, 2C).
+	// Your data here (3A, 3B, 3C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
 
-	// Persistent state on all servers
+	//Persistent state on all servers:
 	currentTerm int
-	serverState ServerState
-	votedFor    int
-	log        []LogEntry
+	votedFor int
+	log []LogEntry
 
-	// Volatile state on all servers
+	//**** NOTE first index in log is 1
+
+	//Volatile state on all servers:
 	commitIndex int
 	lastApplied int
 
-	// Volatile state on leaders
-	nextIndex  []int
+	//Volatile state on leaders:
+	nextIndex []int
 	matchIndex []int
 
-	//elections
+
+	//elections 
+	serverState ServerState
+	lastHeartBeat time.Time
+
+	//applyCh
+	applyCh chan ApplyMsg
+	applyChProxy chan ApplyMsg
+
+	//for candidate
 	votesCount int
 
-	// Snapshot
+	//snapshot
 	lastIncludedIndex int
-	lastIncludedTerm  int
+	lastIncludedTerm int
+	snapshot []byte
 
+/////
 	//channel
-	applyCh chan ApplyMsg // from Make()
 	killCh  chan bool     //for Kill()
-	applyChProxy chan ApplyMsg // from Make()
 
 	//handle rpc
 	voteCh   chan bool
 	appendCh chan bool
 }
-
 
 //lock must be held before calling this
 func (rf *Raft) isCandidateAtLeastUpToDate(LastLogIndex int, LastLogTerm int)bool{
@@ -554,51 +566,54 @@ func (rf *Raft) GetState() (int, bool) {
 
 	return rf.currentTerm, rf.serverState == Leader
 }
-//
-// save Raft's persistent state to stable storage,
-// where it can later be retrieved after a crash and restart.
-// see paper's Figure 2 for a description of what should be persistent.
-//
-func (rf *Raft) persist() {
-	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
-	e.Encode(rf.currentTerm)
-	e.Encode(rf.votedFor)
-	e.Encode(rf.log)
-	e.Encode(rf.lastIncludedIndex)
-	e.Encode(rf.lastIncludedTerm)
-	data := w.Bytes()
-	rf.persister.Save(data, rf.persister.ReadSnapshot())
+
+
+/////////////
+
+func send(ch chan bool) {
+	select {
+	case <-ch:
+	default:
+	}
+	ch <- true
 }
 
-//
-// restore previously persisted state.
-//
-func (rf *Raft) readPersist(data []byte) {
-	if data == nil || len(data) < 1 { // bootstrap without any state?
-		return
-	}
+func (rf *Raft) getPrevLogIdx(i int) int {
+	return rf.nextIndex[i] - 1
+}
 
-	r := bytes.NewBuffer(data)
-	d := labgob.NewDecoder(r)
-	var currentTerm int
-	var voteFor int
-	var logs []LogEntry
-	var lastIncludedIndex int
-	var lastIncludedTerm int
-	if d.Decode(&currentTerm) != nil || d.Decode(&voteFor) != nil || d.Decode(&logs) != nil ||
-		d.Decode(&lastIncludedIndex) != nil || d.Decode(&lastIncludedTerm) != nil {
-		fmt.Errorf("[readPersist]: Decode Error!\n")
-	} else {
-		rf.mu.Lock()
-		rf.currentTerm, rf.votedFor, rf.log = currentTerm, voteFor, logs
-		rf.lastIncludedTerm, rf.lastIncludedIndex = lastIncludedTerm, lastIncludedIndex
-		rf.commitIndex, rf.lastApplied = rf.lastIncludedIndex, rf.lastIncludedIndex
-		rf.mu.Unlock()
+func (rf *Raft) getPrevLogTerm(i int) int {
+	prevLogIdx := rf.getPrevLogIdx(i)
+	if prevLogIdx < rf.lastIncludedIndex {
+		return -1
+	}
+	return rf.getLogEntry(prevLogIdx).Term
+}
+
+func (rf *Raft) getLastLogIdx() int {
+	return rf.logLen() - 1
+}
+
+
+func (rf *Raft) updateMatchIndex(server int, matchIdx int) {
+	rf.matchIndex[server] = matchIdx
+	rf.nextIndex[server] = matchIdx + 1
+	rf.updateCommitIndex()
+}
+
+func (rf *Raft) updateCommitIndex() {
+	rf.matchIndex[rf.me] = rf.logLen() - 1
+	copyMatchIndex := make([]int, len(rf.matchIndex))
+	copy(copyMatchIndex, rf.matchIndex)
+	sort.Sort(sort.Reverse(sort.IntSlice(copyMatchIndex)))
+	N := copyMatchIndex[len(copyMatchIndex)/2]
+	if N > rf.commitIndex && rf.getLogEntry(N).Term == rf.currentTerm {
+		rf.commitIndex = N
+		rf.Commit()
 	}
 }
 
-//
+
 // the service using Raft (e.g. a k/v server) wants to start
 // agreement on the next command to be appended to Raft's log. if this
 // server isn't the leader, returns false. otherwise start the
@@ -611,27 +626,25 @@ func (rf *Raft) readPersist(data []byte) {
 // if it's ever committed. the second return value is the current
 // term. the third return value is true if this server believes it is
 // the leader.
-//
 func (rf *Raft) Start(command interface{}) (int, int, bool) {
-	// Your code here (2B).
+	// Your code here (3B).
+
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	//defer 	rf.persist()
 
-	index := -1
-	term := rf.currentTerm
-	isLeader := rf.serverState == Leader
-
-	if isLeader {
-		index = rf.getLastLogIdx() + 1
-		newLog := LogEntry{
-			rf.currentTerm,
-			command,
-		}
-		rf.log = append(rf.log, newLog)
-		rf.persist()
-		rf.broadcastHeartbeat()
+	if(rf.serverState != Leader){
+		return -1, rf.currentTerm, false
 	}
-	return index, term, isLeader
+	//DPrintf("command at leader: %v\n", rf.me)
+	// If command received from client: append entry to local log,
+	// respond after entry applied to state machine (§5.3)
+	rf.log = append(rf.log, LogEntry{Command: command, Term: rf.currentTerm})
+	////////
+	rf.persist()
+	rf.broadcastHeartbeat()
+
+	return rf.getLastLogIndex(), rf.currentTerm, true
 }
 
 //
@@ -674,7 +687,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	// Your initialization code here (2A, 2B, 2C).
 	rf.serverState = Follower
 	rf.currentTerm = 0
-	rf.votedFor = NULL
+	rf.votedFor = -1
 	rf.log = make([]LogEntry, 1)
 
 	rf.commitIndex = 0
