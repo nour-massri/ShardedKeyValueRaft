@@ -240,24 +240,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	return rf.getLastLogIndex(), rf.currentTerm, true
 }
 
-// the tester doesn't halt goroutines created by Raft after each test,
-// but it does call the Kill() method. your code can use killed() to
-// check whether Kill() has been called. the use of atomic avoids the
-// need for a lock.
-//
-// the issue is that long-running goroutines use memory and may chew
-// up CPU time, perhaps causing later tests to fail and generating
-// confusing debug output. any goroutine with a long-running loop
-// should call killed() to check whether it should stop.
-func (rf *Raft) Kill() {
-	atomic.StoreInt32(&rf.dead, 1)
-	// Your code here, if desired.
-}
 
-func (rf *Raft) killed() bool {
-	z := atomic.LoadInt32(&rf.dead)
-	return z == 1
-}
 
 func (rf *Raft) commitLogs() {
         for {
@@ -366,9 +349,9 @@ package raft
 import (
 	//	"bytes"
 
-	"math/rand"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	//	"6.5840/labgob"
@@ -456,12 +439,9 @@ type Raft struct {
 	snapshot []byte
 
 /////
-	//channel
-	killCh  chan bool     //for Kill()
-
 	//handle rpc
-	voteCh   chan bool
-	appendCh chan bool
+	//voteCh   chan bool
+	//appendCh chan bool
 }
 
 //lock must be held before calling this
@@ -524,7 +504,7 @@ func (rf *Raft) ToCandidate(){
 	rf.votesCount = 1
 	DPrintf("tocandidate %v", rf.me)
 	rf.persist()
-	go rf.broadcastVoteReq()
+	//go rf.broadcastVoteReq()
 }
 
 //lock must be held before calling this
@@ -554,7 +534,7 @@ func (rf *Raft) ToLeader(){
 //lock must be held before calling this
 func (rf *Raft) VotingFor(CandidateId int){
 	rf.votedFor = CandidateId
-	//rf.lastHeartBeat = time.Now()
+	rf.lastHeartBeat = time.Now()
 }
 
 // return currentTerm and whether this server
@@ -647,15 +627,23 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	return rf.getLastLogIndex(), rf.currentTerm, true
 }
 
+// the tester doesn't halt goroutines created by Raft after each test,
+// but it does call the Kill() method. your code can use killed() to
+// check whether Kill() has been called. the use of atomic avoids the
+// need for a lock.
 //
-// the tester calls Kill() when a Raft instance won't
-// be needed again. you are not required to do anything
-// in Kill(), but it might be convenient to (for example)
-// turn off debug output from this instance.
-//
+// the issue is that long-running goroutines use memory and may chew
+// up CPU time, perhaps causing later tests to fail and generating
+// confusing debug output. any goroutine with a long-running loop
+// should call killed() to check whether it should stop.
 func (rf *Raft) Kill() {
+	atomic.StoreInt32(&rf.dead, 1)
 	// Your code here, if desired.
-	send(rf.killCh)
+}
+
+func (rf *Raft) killed() bool {
+	z := atomic.LoadInt32(&rf.dead)
+	return z == 1
 }
 func (rf *Raft) commitLogs() {
 	for {
@@ -666,7 +654,7 @@ func (rf *Raft) commitLogs() {
 
 	}
 }
-//
+
 // the service or tester wants to create a Raft server. the ports
 // of all the Raft servers (including this one) are in peers[]. this
 // server's port is peers[me]. all the servers' peers[] arrays
@@ -676,61 +664,82 @@ func (rf *Raft) commitLogs() {
 // tester or service expects Raft to send ApplyMsg messages.
 // Make() must return quickly, so it should start goroutines
 // for any long-running work.
-//
 func Make(peers []*labrpc.ClientEnd, me int,
 	persister *Persister, applyCh chan ApplyMsg) *Raft {
+
 	rf := &Raft{}
 	rf.peers = peers
 	rf.persister = persister
 	rf.me = me
+	// Your initialization code here (3A, 3B, 3C).
 
-	// Your initialization code here (2A, 2B, 2C).
-	rf.serverState = Follower
+	//persistent state
 	rf.currentTerm = 0
 	rf.votedFor = -1
-	rf.log = make([]LogEntry, 1)
+	rf.log = []LogEntry{}
+	rf.log = append(rf.log, LogEntry{Term:0})
 
+	//volatile state
 	rf.commitIndex = 0
 	rf.lastApplied = 0
 
+	//only iniitlize at ToLeader func
+	// rf.nextIndex = make([]int, len(rf.peers))
+	// rf.matchIndex = make([]int, len(rf.peers))
+
 	rf.applyCh = applyCh
-	rf.applyChProxy = make(chan ApplyMsg,100)
-	rf.voteCh = make(chan bool, 1)
-	rf.appendCh = make(chan bool, 1)
-	rf.killCh = make(chan bool, 1)
+
+	rf.lastHeartBeat = time.Now()
+	rf.serverState = Follower
+
+	rf.votesCount = 0
+
+	rf.snapshot = nil
+	rf.lastIncludedIndex = 0
+	rf.lastIncludedTerm = 0
+	rf.applyChProxy = make(chan ApplyMsg, 100)
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
+	
+	///rf.readSnapshot(persister.ReadSnapshot())
 
+
+	////////
+	//rf.voteCh = make(chan bool, 1)
+	//rf.appendCh = make(chan bool, 1)
+
+	go rf.broadcastHeartbeat()
+	go rf.ElectionTicker()
 	go rf.service()
+
+	// start ticker goroutine to start elections
+	/// go rf.ElectionTicker()
+	/// go rf.LeaderAppendEntriesTicker()
 	go rf.commitLogs()
 	return rf
 }
 
 func (rf *Raft) service() {
-	for {
-		select {
-		case <-rf.killCh:
-			return
-		default:
-		}
+	for !rf.killed(){
+
 
 		rf.mu.Lock()
 		state := rf.serverState
 		rf.mu.Unlock()
 
-		electionTime := time.Duration(rand.Intn(200)+300) * time.Millisecond
+		//electionTime := time.Duration(rand.Intn(200)+300) * time.Millisecond
 		heartbeatTime := time.Duration(100) * time.Millisecond
 		switch state {
-		case Follower, Candidate:
-			select {
-			case <-rf.voteCh:
-			case <-rf.appendCh:
-			case <-time.After(electionTime):
-				rf.mu.Lock()
-				rf.ToCandidate()
-				rf.mu.Unlock()
-			}
+		// case Follower, Candidate:
+		// 	select {
+		// 	case <-rf.voteCh:
+		// 	case <-rf.appendCh:
+		// 	case <-time.After(electionTime):
+		// 		rf.mu.Lock()
+		// 		rf.ToCandidate()
+		// 		rf.mu.Unlock()
+		// 	}
 		case Leader:
 			time.Sleep(heartbeatTime)
 			rf.broadcastHeartbeat()

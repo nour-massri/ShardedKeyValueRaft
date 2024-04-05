@@ -1,4 +1,3 @@
-/*
 package raft
 
 import "time"
@@ -114,9 +113,9 @@ func (rf *Raft) ElectionTicker() {
 		lastHeartBeat := rf.lastHeartBeat
 		serverState := rf.serverState
 
-		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(800,1200){
+		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(300,500){
 			rf.mu.Unlock()
-			time.Sleep(getRandtime(400, 500))
+			time.Sleep(getRandtime(100, 200))
 			continue
 		}
 		//DPrintf("server %v starts election\n", rf.me)
@@ -143,12 +142,13 @@ func (rf *Raft) ElectionTicker() {
 
 		// pause for a random amount of time between 150 and 250
 		// milliseconds.
-		time.Sleep(getRandtime(400, 500))
+		time.Sleep(getRandtime(100, 200))
 	}
 }
 
-*/
 
+
+/*
 package raft
 
 import (
@@ -249,3 +249,4 @@ func (rf *Raft) broadcastVoteReq() {
 		}(i)
 	}
 }
+*/

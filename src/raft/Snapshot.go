@@ -132,6 +132,7 @@ package raft
 
 import (
 	"bytes"
+	"time"
 
 	"6.5840/labgob"
 )
@@ -162,7 +163,8 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	if args.Term > rf.currentTerm {
 		rf.ToFollower(args.Term)
 	}
-	send(rf.appendCh)
+	rf.lastHeartBeat = time.Now()
+	//send(rf.appendCh)
 
 	// check snapshot may expire by lock competition, otherwise rf.logs may overflow below
 	if args.LastIncludedIndex <= rf.lastIncludedIndex {
@@ -247,6 +249,7 @@ func (rf *Raft) sendSnapshot(peer int) {
 }
 
 func (rf *Raft) Snapshot(index int, snapshot []byte) {
+	 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 

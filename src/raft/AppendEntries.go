@@ -274,6 +274,8 @@ func (rf *Raft) Commit() {
 
 package raft
 
+import "time"
+
 type AppendEntriesArgs struct {
 	Term         int
 	LeaderId     int
@@ -297,7 +299,8 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if args.Term > rf.currentTerm {
 		rf.ToFollower(args.Term)
 	}
-	send(rf.appendCh)
+	rf.lastHeartBeat = time.Now()
+	//send(rf.appendCh)
 
 	reply.Term = rf.currentTerm
 	reply.Success = false
@@ -365,76 +368,94 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 }
 
 func (rf *Raft) broadcastHeartbeat() {
-	DPrintf("%d send logs: %v", rf.me, rf.log)
+	// DPrintf("%d send logs: %v", rf.me, rf.log)
+	// for !rf.killed(){
 
-	for i := 0; i < len(rf.peers); i++ {
-		if i == rf.me {
-			continue
-		}
+	// 	rf.mu.Lock()
+	// 	if rf.serverState != Leader{
+	// 		rf.mu.Unlock()
+	// 		time.Sleep(getRandtime(100, 100))
+	// 		continue
+	// 	}
+	// 	//DPrintf("go append entries from server:%v commit%v lastapplied%v\n\n", rf.me, rf.commitIndex, rf.lastApplied)
 
-		go func(peer int) {
-			for {
-				rf.mu.Lock()
-				if rf.serverState != Leader {
-					rf.mu.Unlock()
-					return
-				}
+	// 	//DPrintf("leader %v is sending %v\n ", rf.me, time.Now())
+	// 	//send heartbeats
+	// 	//reset the election timeout
+	// 	rf.lastHeartBeat = time.Now()
+	// 	rf.mu.Unlock()
 
-				if rf.nextIndex[peer]-rf.lastIncludedIndex < 1 {
-					rf.sendSnapshot(peer)
-					return
-				}
-
-				args := AppendEntriesArgs{
-					rf.currentTerm,
-					rf.me,
-					rf.getPrevLogIdx(peer),
-					rf.getPrevLogTerm(peer),
-					rf.commitIndex,
-					append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
-				}
-				rf.mu.Unlock()
-
-				reply := &AppendEntriesReply{}
-				ok := rf.sendAppendEntries(peer, &args, reply)
-				rf.mu.Lock()
-				if !ok || rf.serverState != Leader || rf.currentTerm != args.Term {
-					rf.mu.Unlock()
-					return
-				}
-
-				if reply.Term > rf.currentTerm {
-					rf.ToFollower(reply.Term)
-					rf.mu.Unlock()
-					return
-				}
-
-				// update nextIndex and matchIndex for follower
-				if reply.Success {
-					rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.Entries))
-					rf.mu.Unlock()
-					return
-				} else {
-					// decrement nextIndex and retry
-					index := reply.ConflictIndex
-					if reply.ConflictTerm != -1 {
-						logSize := rf.logLen()
-						for i := rf.lastIncludedIndex; i < logSize; i++ {
-							if rf.getLogEntry(i).Term != reply.ConflictTerm {
-								continue
-							}
-							for i < logSize && rf.getLogEntry(i).Term == reply.ConflictTerm {
-								i++
-							}
-							index = i
-						}
-					}
-					rf.nextIndex[peer] = min(rf.logLen(), index)
-					rf.mu.Unlock()
-				}
+		for i := 0; i < len(rf.peers); i++ {
+			if i == rf.me {
+				continue
 			}
-		}(i)
-	}
+
+			go func(peer int) {
+				for {
+					rf.mu.Lock()
+					if rf.serverState != Leader {
+						rf.mu.Unlock()
+						return
+					}
+
+					if rf.nextIndex[peer]-rf.lastIncludedIndex < 1 {
+						rf.sendSnapshot(peer)
+						return
+					}
+
+					args := AppendEntriesArgs{
+						rf.currentTerm,
+						rf.me,
+						rf.getPrevLogIdx(peer),
+						rf.getPrevLogTerm(peer),
+						rf.commitIndex,
+						append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
+					}
+					rf.mu.Unlock()
+
+					reply := &AppendEntriesReply{}
+					ok := rf.sendAppendEntries(peer, &args, reply)
+					rf.mu.Lock()
+					if !ok || rf.serverState != Leader || rf.currentTerm != args.Term {
+						rf.mu.Unlock()
+						return
+					}
+
+					if reply.Term > rf.currentTerm {
+						rf.ToFollower(reply.Term)
+						rf.mu.Unlock()
+						return
+					}
+
+					// update nextIndex and matchIndex for follower
+					if reply.Success {
+						rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.Entries))
+						rf.mu.Unlock()
+						return
+					} else {
+						// decrement nextIndex and retry
+						index := reply.ConflictIndex
+						if reply.ConflictTerm != -1 {
+							logSize := rf.logLen()
+							for i := rf.lastIncludedIndex; i < logSize; i++ {
+								if rf.getLogEntry(i).Term != reply.ConflictTerm {
+									continue
+								}
+								for i < logSize && rf.getLogEntry(i).Term == reply.ConflictTerm {
+									i++
+								}
+								index = i
+							}
+						}
+						rf.nextIndex[peer] = min(rf.logLen(), index)
+						rf.mu.Unlock()
+					}
+				}
+			}(i)
+		}
+		//time.Sleep(getRandtime(100, 100))
+
+	//}
 }
 
 // Commit should be called after commitIndex updated
