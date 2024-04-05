@@ -622,7 +622,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.log = append(rf.log, LogEntry{Command: command, Term: rf.currentTerm})
 	////////
 	rf.persist()
-	rf.broadcastHeartbeat()
+	//rf.broadcastHeartbeat()
 
 	return rf.getLastLogIndex(), rf.currentTerm, true
 }
@@ -704,45 +704,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	
 	///rf.readSnapshot(persister.ReadSnapshot())
 
-
-	////////
-	//rf.voteCh = make(chan bool, 1)
-	//rf.appendCh = make(chan bool, 1)
-
-	go rf.broadcastHeartbeat()
-	go rf.ElectionTicker()
-	go rf.service()
-
 	// start ticker goroutine to start elections
-	/// go rf.ElectionTicker()
-	/// go rf.LeaderAppendEntriesTicker()
+	go rf.ElectionTicker()
+	go rf.broadcastHeartbeat()
 	go rf.commitLogs()
+
 	return rf
 }
 
-func (rf *Raft) service() {
-	for !rf.killed(){
-
-
-		rf.mu.Lock()
-		state := rf.serverState
-		rf.mu.Unlock()
-
-		//electionTime := time.Duration(rand.Intn(200)+300) * time.Millisecond
-		heartbeatTime := time.Duration(100) * time.Millisecond
-		switch state {
-		// case Follower, Candidate:
-		// 	select {
-		// 	case <-rf.voteCh:
-		// 	case <-rf.appendCh:
-		// 	case <-time.After(electionTime):
-		// 		rf.mu.Lock()
-		// 		rf.ToCandidate()
-		// 		rf.mu.Unlock()
-		// 	}
-		case Leader:
-			time.Sleep(heartbeatTime)
-			rf.broadcastHeartbeat()
-		}
-	}
-}

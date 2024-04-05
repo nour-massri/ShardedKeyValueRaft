@@ -368,23 +368,18 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 }
 
 func (rf *Raft) broadcastHeartbeat() {
-	// DPrintf("%d send logs: %v", rf.me, rf.log)
-	// for !rf.killed(){
+	for !rf.killed(){
 
-	// 	rf.mu.Lock()
-	// 	if rf.serverState != Leader{
-	// 		rf.mu.Unlock()
-	// 		time.Sleep(getRandtime(100, 100))
-	// 		continue
-	// 	}
-	// 	//DPrintf("go append entries from server:%v commit%v lastapplied%v\n\n", rf.me, rf.commitIndex, rf.lastApplied)
+		heartbeatTime := time.Duration(100) * time.Millisecond
+		time.Sleep(heartbeatTime)
 
-	// 	//DPrintf("leader %v is sending %v\n ", rf.me, time.Now())
-	// 	//send heartbeats
-	// 	//reset the election timeout
-	// 	rf.lastHeartBeat = time.Now()
-	// 	rf.mu.Unlock()
-
+		rf.mu.Lock()
+		state := rf.serverState
+		rf.mu.Unlock()
+		if state != Leader{
+			continue
+		}
+		//DPrintf("%d send logs: %v", rf.me, rf.log)
 		for i := 0; i < len(rf.peers); i++ {
 			if i == rf.me {
 				continue
@@ -397,6 +392,7 @@ func (rf *Raft) broadcastHeartbeat() {
 						rf.mu.Unlock()
 						return
 					}
+					//DPrintf("%d send logs: %v to %v", rf.me, rf.log, peer)
 
 					if rf.nextIndex[peer]-rf.lastIncludedIndex < 1 {
 						rf.sendSnapshot(peer)
@@ -453,9 +449,7 @@ func (rf *Raft) broadcastHeartbeat() {
 				}
 			}(i)
 		}
-		//time.Sleep(getRandtime(100, 100))
-
-	//}
+	}
 }
 
 // Commit should be called after commitIndex updated
