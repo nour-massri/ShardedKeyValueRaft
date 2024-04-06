@@ -369,6 +369,7 @@ import (
 	"math/rand"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	//	"6.5840/labgob"
@@ -455,8 +456,6 @@ type Raft struct {
 	lastIncludedTerm int
 
 /////
-	//channel
-	killCh  chan bool     //for Kill()
 
 	//handle rpc
 	voteCh   chan bool
@@ -575,15 +574,23 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	return rf.getLastLogIndex(), rf.currentTerm, true
 }
 
+// the tester doesn't halt goroutines created by Raft after each test,
+// but it does call the Kill() method. your code can use killed() to
+// check whether Kill() has been called. the use of atomic avoids the
+// need for a lock.
 //
-// the tester calls Kill() when a Raft instance won't
-// be needed again. you are not required to do anything
-// in Kill(), but it might be convenient to (for example)
-// turn off debug output from this instance.
-//
+// the issue is that long-running goroutines use memory and may chew
+// up CPU time, perhaps causing later tests to fail and generating
+// confusing debug output. any goroutine with a long-running loop
+// should call killed() to check whether it should stop.
 func (rf *Raft) Kill() {
+	atomic.StoreInt32(&rf.dead, 1)
 	// Your code here, if desired.
-	send(rf.killCh)
+}
+
+func (rf *Raft) killed() bool {
+	z := atomic.LoadInt32(&rf.dead)
+	return z == 1
 }
 func (rf *Raft) commitLogs() {
 	for {
@@ -625,7 +632,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.applyChProxy = make(chan ApplyMsg,100)
 	rf.voteCh = make(chan bool, 1)
 	rf.appendCh = make(chan bool, 1)
-	rf.killCh = make(chan bool, 1)
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
@@ -636,12 +642,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 }
 
 func (rf *Raft) service() {
-	for {
-		select {
-		case <-rf.killCh:
-			return
-		default:
-		}
+	for !rf.killed(){
 
 		rf.mu.Lock()
 		state := rf.serverState
