@@ -453,7 +453,6 @@ type Raft struct {
 	//snapshot
 	lastIncludedIndex int
 	lastIncludedTerm int
-	snapshot []byte
 
 /////
 	//channel
@@ -504,59 +503,6 @@ func (rf *Raft) getLastLogTerm()int {
 	return rf.getLogEntry(rf.getLastLogIndex()).Term
 }
 
-//lock must be held before calling this
-func (rf *Raft) ToFollower(Term int){
-	// if rf.serverState == Leader{
-	// 	DPrintf("Leader %v stepped down from preTerm%v to newTerm%v\n", rf.me, rf.currentTerm, Term)
-	// }
-	rf.currentTerm = Term
-	rf.votedFor = -1
-	rf.serverState = Follower
-	rf.persist(rf.persister.ReadSnapshot())
-
-}
-//lock must be held before calling this
-
-func (rf *Raft) ToCandidate(){
-	rf.serverState = Candidate
-	rf.currentTerm += 1
-	rf.votedFor = rf.me
-	rf.votesCount = 1
-	DPrintf("tocandidate %v", rf.me)
-	rf.persist(rf.persister.ReadSnapshot())
-	go rf.broadcastVoteReq()
-}
-
-//lock must be held before calling this
-func (rf *Raft) ToLeader(){
-	if rf.serverState != Candidate{
-		return
-	}
-	rf.serverState = Leader
-
-	//DPrintf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
-
-	//reinitialize nextIndex, matchIndex
-
-	//When a leader first comes to power,
-	// it initializes all nextIndex values to the index just after the
-	// last one in its log
-	rf.nextIndex = make([]int, len(rf.peers))
-	rf.matchIndex = make([]int, len(rf.peers))
-
-	for i:= 0; i < len(rf.nextIndex); i++{
-		rf.nextIndex[i] = rf.getLastLogIndex()+1
-		rf.matchIndex[i] = 0
-	}
-	//DPrintf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
-}
-
-//lock must be held before calling this
-func (rf *Raft) VotingFor(CandidateId int){
-	rf.votedFor = CandidateId
-	//rf.lastHeartBeat = time.Now()
-}
-
 // return currentTerm and whether this server
 // believes it is the leader.
 func (rf *Raft) GetState() (int, bool) {
@@ -577,23 +523,6 @@ func send(ch chan bool) {
 	}
 	ch <- true
 }
-
-func (rf *Raft) getPrevLogIdx(i int) int {
-	return rf.nextIndex[i] - 1
-}
-
-func (rf *Raft) getPrevLogTerm(i int) int {
-	prevLogIdx := rf.getPrevLogIdx(i)
-	if prevLogIdx < rf.lastIncludedIndex {
-		return -1
-	}
-	return rf.getLogEntry(prevLogIdx).Term
-}
-
-func (rf *Raft) getLastLogIdx() int {
-	return rf.logLen() - 1
-}
-
 
 func (rf *Raft) updateMatchIndex(server int, matchIdx int) {
 	rf.matchIndex[server] = matchIdx

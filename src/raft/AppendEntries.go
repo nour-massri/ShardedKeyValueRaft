@@ -353,7 +353,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	// if LeaderCommit > commitIndex, set commitIndex = min(LeaderCommit, index of the last logs entry)
 	if args.LeaderCommit > rf.commitIndex {
-		rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIdx())
+		rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIndex())
 		rf.Commit()
 	}
 	reply.Success = true
@@ -388,8 +388,8 @@ func (rf *Raft) broadcastHeartbeat() {
 				args := AppendEntriesArgs{
 					rf.currentTerm,
 					rf.me,
-					rf.getPrevLogIdx(peer),
-					rf.getPrevLogTerm(peer),
+					rf.nextIndex[peer]-1,
+					rf.getLogEntry(rf.nextIndex[peer]-1).Term,
 					rf.commitIndex,
 					append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
 				}
