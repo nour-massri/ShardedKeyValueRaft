@@ -274,89 +274,104 @@ func (rf *Raft) Commit() {
 
 package raft
 
+import "time"
+
 type AppendEntriesArgs struct {
-	Term         int
-	LeaderId     int
+	Term int
+	LeaderId int
 	PrevLogIndex int
-	PrevLogTerm  int
+	PrevLogTerm int
+	LogEntries []LogEntry
 	LeaderCommit int
-	Entries      []LogEntry
 }
 
 type AppendEntriesReply struct {
-	Term          int
-	Success       bool
-	ConflictIndex int
-	ConflictTerm  int
+	// Your data here (3A).
+	Term int
+	Success bool
+	XTerm  int //term in the conflicting entry (if any)
+    XIndex int //index of first entry with that term (if any)
+    XLen   int// log length
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
+		// Your code here (3A, 3B).
+		rf.mu.Lock()
+		defer rf.mu.Unlock()
+	
+		DPrintf("append from leader%v to server%v, with base-1=%v lastprevlog:%v, lastprevTerm:%v logentries:%v\n",
+		args.LeaderId, rf.me, rf.lastIncludedIndex, args.PrevLogIndex, args.PrevLogTerm, len(args.LogEntries))
+	
+		if args.Term > rf.currentTerm{
+			rf.ToFollower(args.Term)
+		}
+	
+		reply.Term = rf.currentTerm
+		reply.Success = false
+		reply.XTerm = -1
+		reply.XIndex = 0
+		reply.XLen = rf.logLen()
+		rf.lastHeartBeat = time.Now()
+		send(rf.appendCh)
 
-	if args.Term > rf.currentTerm {
-		rf.ToFollower(args.Term)
-	}
-	send(rf.appendCh)
-
-	reply.Term = rf.currentTerm
-	reply.Success = false
-	reply.ConflictTerm = -1
-	reply.ConflictIndex = 0
-
-	// reply false if logs doesn't contain an entry at prevLogIndex whose term matches prevLogTerm (§5.3)
-	prevLogIndexTerm := -1
-	logSize := rf.logLen()
-	if args.PrevLogIndex >= rf.lastIncludedIndex && args.PrevLogIndex < rf.logLen() {
-		prevLogIndexTerm = rf.getLogEntry(args.PrevLogIndex).Term
-	}
-
-	// check terms
-	if prevLogIndexTerm != args.PrevLogTerm {
-		reply.ConflictIndex = logSize
-		if prevLogIndexTerm == -1 {
-			// return with conflictIndex = len(logs) and conflictTerm = -1
-		} else {
-			reply.ConflictTerm = prevLogIndexTerm
-			for i := rf.lastIncludedIndex; i < logSize; i++ {
-				if rf.getLogEntry(i).Term == reply.ConflictTerm {
-					reply.ConflictIndex = i
+		if args.Term < rf.currentTerm {
+			//1. Reply false if term < currentTerm (§5.1)
+	
+			 //DPrintf("failed 1, leader %v term=%v send to follower %v term=%v\n", args.LeaderId,args.Term, rf.me, rf.currentTerm)
+			return
+	
+		} else if(!(args.PrevLogIndex >= rf.lastIncludedIndex && args.PrevLogIndex < rf.logLen())){
+			//2. Reply false if log doesn’t contain an entry at prevLogIndex
+	
+			//follower log shorter than leader's
+			 //DPrintf("failed 2: Leader %v send to follower %v rf.lastindex=%v, args.previndex=%v\n",args.LeaderId, rf.me, rf.getLastLogIndex(), args.PrevLogIndex)
+			reply.XIndex = rf.getLastLogIndex()
+			return
+		}else if(rf.getLogEntry(args.PrevLogIndex).Term != args.PrevLogTerm) {
+			//2. Reply false if log contains an entry at prevLogIndex but term mismatch
+	
+			//conflict
+			reply.XTerm = rf.getLogEntry(args.PrevLogIndex).Term
+			for i := rf.lastIncludedIndex; i < rf.logLen(); i++ {
+				if rf.getLogEntry(i).Term == reply.XTerm {
+					reply.XIndex = i
 					break
 				}
 			}
+			//DPrintf("failed 2: Leader %v send to follower %v rf.lastindex=%v, args.previndex=%v\n",args.LeaderId, rf.me, rf.getLastLogIndex(), args.PrevLogIndex)
+	
+	   } else {
+			reply.Success = true
+	
+			//4. Append any new entries not already in the log
+			//rf.log = append( rf.getLogSlice(rf.lastIncludedIndex, args.PrevLogIndex+1), (args.LogEntries)...)
+	// 		if j < len(args.LogEntries) {
+	// 			DPrintf("Leader %v term=%v overwriting logs at follower %v term=%v: len(rf.log)=%v i=%v len(args.entries)=%v j=%v\n", args.LeaderId, args.Term, rf.me, rf.currentTerm, len(rf.log), i, len(args.LogEntries),j)
+	// 		}
+			index := args.PrevLogIndex
+			for i := 0; i < len(args.LogEntries); i++ {
+				index++
+				if index < rf.logLen() {
+					if rf.getLogEntry(index).Term == args.LogEntries[i].Term {
+						continue
+					} else {
+						rf.log = rf.log[:index-rf.lastIncludedIndex]
+					}
+				}
+				// append any new entries not already in the logs
+				rf.log = append(rf.log, args.LogEntries[i:]...)
+				rf.persist(rf.persister.ReadSnapshot())
+				break
 		}
-		return
-	}
-
-	// reply false if term < currentTerm (§5.1)
-	if args.Term < rf.currentTerm {
-		return
-	}
-
-	// if an existing entry conflicts with a new one (same index but different terms),
-	// delete the existing entry and all follow it (§5.3)
-	index := args.PrevLogIndex
-	for i := 0; i < len(args.Entries); i++ {
-		index++
-		if index < logSize {
-			if rf.getLogEntry(index).Term == args.Entries[i].Term {
-				continue
-			} else {
-				rf.log = rf.log[:index-rf.lastIncludedIndex]
+			//5. If leaderCommit > commitIndex, set commitIndex =
+			//min(leaderCommit, index of last new entry)
+			if args.LeaderCommit > rf.commitIndex{
+				rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIndex())
+				DPrintf("follower %v commit index:%v\n", rf.me, rf.commitIndex)
+				//go rf.commitLogs()
+				rf.Commit()
 			}
 		}
-		// append any new entries not already in the logs
-		rf.log = append(rf.log, args.Entries[i:]...)
-		rf.persist(rf.persister.ReadSnapshot())
-		break
-	}
-
-	// if LeaderCommit > commitIndex, set commitIndex = min(LeaderCommit, index of the last logs entry)
-	if args.LeaderCommit > rf.commitIndex {
-		rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIndex())
-		rf.Commit()
-	}
-	reply.Success = true
 }
 //called while aquiring the lock
 func (rf *Raft) sendAppendEntries(peer int) {
@@ -366,8 +381,9 @@ func (rf *Raft) sendAppendEntries(peer int) {
 			rf.me,
 			rf.nextIndex[peer]-1,
 			rf.getLogEntry(rf.nextIndex[peer]-1).Term,
-			rf.commitIndex,
 			append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
+			rf.commitIndex,
+
 		}
 		rf.mu.Unlock()
 
@@ -387,19 +403,19 @@ func (rf *Raft) sendAppendEntries(peer int) {
 
 		// update nextIndex and matchIndex for follower
 		if reply.Success {
-			rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.Entries))
+			rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.LogEntries))
 			rf.mu.Unlock()
 			return
 		} else {
 			// decrement nextIndex and retry
-			index := reply.ConflictIndex
-			if reply.ConflictTerm != -1 {
+			index := reply.XIndex
+			if reply.XTerm != -1 {
 				logSize := rf.logLen()
 				for i := rf.lastIncludedIndex; i < logSize; i++ {
-					if rf.getLogEntry(i).Term != reply.ConflictTerm {
+					if rf.getLogEntry(i).Term != reply.XTerm {
 						continue
 					}
-					for i < logSize && rf.getLogEntry(i).Term == reply.ConflictTerm {
+					for i < logSize && rf.getLogEntry(i).Term == reply.XTerm {
 						i++
 					}
 					index = i
