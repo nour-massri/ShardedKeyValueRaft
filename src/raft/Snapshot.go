@@ -163,11 +163,6 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		return
 	}
 
-	// 2. create new snapshot file if first chunk (offset is 0)
-	// 3. write data into snapshot file at given offset
-	// 4. reply and wait for more data chunks if done is false
-	// 5. save snapshot file, discard any existing or partial snapshot with a smaller index
-
 	// 6. if existing log entry has the same index and term as snapshot's last included entry,
 	// retain log entries following it and reply
 	if args.LastIncludedIndex < rf.logLen()-1 {
