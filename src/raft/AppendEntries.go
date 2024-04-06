@@ -381,7 +381,7 @@ func (rf *Raft) broadcastHeartbeat() {
 				}
 
 				if rf.nextIndex[peer]-rf.lastIncludedIndex < 1 {
-					rf.sendSnapshot(peer)
+					rf.sendInstallSnapshot(peer)
 					return
 				}
 

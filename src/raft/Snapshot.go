@@ -195,12 +195,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	rf.applyChProxy <- applyMsg
 }
 
-func (rf *Raft) sendInstallSnapshot(peer int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
-	ok := rf.peers[peer].Call("Raft.InstallSnapshot", args, reply)
-	return ok
-}
-
-func (rf *Raft) sendSnapshot(peer int) {
+func (rf *Raft) sendInstallSnapshot(peer int)  {
 	args := InstallSnapshotArgs{
 		Term:              rf.currentTerm,
 		LastIncludedIndex: rf.lastIncludedIndex,
@@ -211,7 +206,7 @@ func (rf *Raft) sendSnapshot(peer int) {
 
 	rf.mu.Unlock()
 	reply := InstallSnapshotReply{}
-	ok := rf.sendInstallSnapshot(peer, &args, &reply)
+	ok := rf.peers[peer].Call("Raft.InstallSnapshot", &args, &reply)
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
