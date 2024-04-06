@@ -359,9 +359,54 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	reply.Success = true
 }
 
-func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
-	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
-	return ok
+func (rf *Raft) sendAppendEntries(peer int) {
+	args := AppendEntriesArgs{
+		rf.currentTerm,
+		rf.me,
+		rf.nextIndex[peer]-1,
+		rf.getLogEntry(rf.nextIndex[peer]-1).Term,
+		rf.commitIndex,
+		append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
+	}
+	rf.mu.Unlock()
+
+	reply := &AppendEntriesReply{}
+	ok := rf.peers[peer].Call("Raft.AppendEntries", &args, &reply)
+	rf.mu.Lock()
+	if !ok || rf.serverState != Leader || rf.currentTerm != args.Term {
+		rf.mu.Unlock()
+		return
+	}
+
+	if reply.Term > rf.currentTerm {
+		rf.ToFollower(reply.Term)
+		rf.mu.Unlock()
+		return
+	}
+
+	// update nextIndex and matchIndex for follower
+	if reply.Success {
+		rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.Entries))
+		rf.mu.Unlock()
+		return
+	} else {
+		// decrement nextIndex and retry
+		index := reply.ConflictIndex
+		if reply.ConflictTerm != -1 {
+			logSize := rf.logLen()
+			for i := rf.lastIncludedIndex; i < logSize; i++ {
+				if rf.getLogEntry(i).Term != reply.ConflictTerm {
+					continue
+				}
+				for i < logSize && rf.getLogEntry(i).Term == reply.ConflictTerm {
+					i++
+				}
+				index = i
+			}
+		}
+		rf.nextIndex[peer] = min(rf.logLen(), index)
+		rf.mu.Unlock()
+	}
 }
 
 func (rf *Raft) broadcastHeartbeat() {
@@ -385,53 +430,9 @@ func (rf *Raft) broadcastHeartbeat() {
 					return
 				}
 
-				args := AppendEntriesArgs{
-					rf.currentTerm,
-					rf.me,
-					rf.nextIndex[peer]-1,
-					rf.getLogEntry(rf.nextIndex[peer]-1).Term,
-					rf.commitIndex,
-					append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
-				}
-				rf.mu.Unlock()
-
-				reply := &AppendEntriesReply{}
-				ok := rf.sendAppendEntries(peer, &args, reply)
-				rf.mu.Lock()
-				if !ok || rf.serverState != Leader || rf.currentTerm != args.Term {
-					rf.mu.Unlock()
-					return
-				}
-
-				if reply.Term > rf.currentTerm {
-					rf.ToFollower(reply.Term)
-					rf.mu.Unlock()
-					return
-				}
-
-				// update nextIndex and matchIndex for follower
-				if reply.Success {
-					rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.Entries))
-					rf.mu.Unlock()
-					return
-				} else {
-					// decrement nextIndex and retry
-					index := reply.ConflictIndex
-					if reply.ConflictTerm != -1 {
-						logSize := rf.logLen()
-						for i := rf.lastIncludedIndex; i < logSize; i++ {
-							if rf.getLogEntry(i).Term != reply.ConflictTerm {
-								continue
-							}
-							for i < logSize && rf.getLogEntry(i).Term == reply.ConflictTerm {
-								i++
-							}
-							index = i
-						}
-					}
-					rf.nextIndex[peer] = min(rf.logLen(), index)
-					rf.mu.Unlock()
-				}
+				
+				rf.sendAppendEntries(peer)
+				
 			}
 		}(i)
 	}
