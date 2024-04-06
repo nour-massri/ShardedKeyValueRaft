@@ -214,8 +214,9 @@ func (rf *Raft) sendInstallSnapshot(peer int)  {
 		return
 	}
 
-	// update succeeded
-	rf.updateMatchIndex(peer, rf.lastIncludedIndex)
+	rf.matchIndex[peer] = rf.lastIncludedIndex
+	rf.nextIndex[peer] = rf.matchIndex[peer] + 1
+	rf.updateCommitIndex()
 }
 
 func (rf *Raft) Snapshot(index int, snapshot []byte) {

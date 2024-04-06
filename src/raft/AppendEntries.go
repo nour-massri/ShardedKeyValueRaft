@@ -99,6 +99,9 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// 		if j < len(args.LogEntries) {
 	// 			DPrintf("Leader %v term=%v overwriting logs at follower %v term=%v: len(rf.log)=%v i=%v len(args.entries)=%v j=%v\n", args.LeaderId, args.Term, rf.me, rf.currentTerm, len(rf.log), i, len(args.LogEntries),j)
 	// 		}
+			// rf.log = append(rf.getLogSlice(rf.lastIncludedIndex, args.PrevLogIndex + 1), args.LogEntries...)
+			// rf.persist(rf.persister.ReadSnapshot())
+
 			index := args.PrevLogIndex
 			for i := 0; i < len(args.LogEntries); i++ {
 				index++
@@ -113,7 +116,8 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 				rf.log = append(rf.log, args.LogEntries[i:]...)
 				rf.persist(rf.persister.ReadSnapshot())
 				break
-		}
+			}
+
 			//5. If leaderCommit > commitIndex, set commitIndex =
 			//min(leaderCommit, index of last new entry)
 			if args.LeaderCommit > rf.commitIndex{
@@ -132,7 +136,7 @@ func (rf *Raft) sendAppendEntries(peer int) {
 			rf.me,
 			rf.nextIndex[peer]-1,
 			rf.getLogEntry(rf.nextIndex[peer]-1).Term,
-			append(make([]LogEntry, 0), rf.log[rf.nextIndex[peer]-rf.lastIncludedIndex:]...),
+			rf.getLogSlice(rf.nextIndex[peer], rf.getLastLogIndex()+1),
 			rf.commitIndex,
 
 		}
@@ -154,7 +158,9 @@ func (rf *Raft) sendAppendEntries(peer int) {
 
 		// update nextIndex and matchIndex for follower
 		if reply.Success {
-			rf.updateMatchIndex(peer, args.PrevLogIndex+len(args.LogEntries))
+			rf.matchIndex[peer] = args.PrevLogIndex+len(args.LogEntries)
+			rf.nextIndex[peer] = rf.matchIndex[peer] + 1
+			rf.updateCommitIndex()
 			rf.mu.Unlock()
 			return
 		} else {
@@ -210,8 +216,6 @@ func (rf *Raft) Commit() {
 		rf.lastApplied++
 		log := rf.getLogEntry(rf.lastApplied)
 		applyMsg := ApplyMsg{CommandValid: true, Command: log.Command, CommandIndex: rf.lastApplied}
-		//rf.applyCh <- applyMsg
 		rf.applyChProxy <- applyMsg
-
 	}
 }

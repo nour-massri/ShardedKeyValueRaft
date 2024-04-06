@@ -513,12 +513,6 @@ func send(ch chan bool) {
 	ch <- true
 }
 
-func (rf *Raft) updateMatchIndex(server int, matchIdx int) {
-	rf.matchIndex[server] = matchIdx
-	rf.nextIndex[server] = matchIdx + 1
-	rf.updateCommitIndex()
-}
-
 func (rf *Raft) updateCommitIndex() {
 	rf.matchIndex[rf.me] = rf.logLen() - 1
 	copyMatchIndex := make([]int, len(rf.matchIndex))
