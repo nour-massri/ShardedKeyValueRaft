@@ -7,7 +7,7 @@ import (
 	"6.5840/labgob"
 )
 
-func (rf *Raft) persist() {
+func (rf *Raft) persist(snapshot []byte) {
 	// Your code here (2C).
 	buffer := new(bytes.Buffer)
 	encoder := labgob.NewEncoder(buffer)
@@ -17,7 +17,7 @@ func (rf *Raft) persist() {
 	encoder.Encode(rf.lastIncludedIndex)
 	encoder.Encode(rf.lastIncludedTerm)
 
-	rf.persister.Save(buffer.Bytes(), rf.persister.ReadSnapshot())
+	rf.persister.Save(buffer.Bytes(), snapshot)
 }
 
 

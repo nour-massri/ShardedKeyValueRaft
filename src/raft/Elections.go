@@ -2,6 +2,69 @@ package raft
 
 import "time"
 
+//lock must be held before calling this
+func (rf *Raft) isCandidateAtLeastUpToDate(LastLogIndex int, LastLogTerm int)bool{
+
+	//DPrintf("current term:%v index:%v given term%v index%v\n", rf.getLastLogTerm(), rf.getLastLogIndex(), LastLogTerm, LastLogIndex)
+	if(LastLogTerm == rf.getLastLogTerm() ){
+		return LastLogIndex >= rf.getLastLogIndex()
+	}
+	return LastLogTerm > rf.getLastLogTerm()
+
+}
+
+//lock must be held before calling this
+func (rf *Raft) ToFollower(Term int){
+	// if rf.serverState == Leader{
+	// 	DPrintf("Leader %v stepped down from preTerm%v to newTerm%v\n", rf.me, rf.currentTerm, Term)
+	// }
+	rf.currentTerm = Term
+	rf.votedFor = -1
+	rf.serverState = Follower
+	rf.persist(rf.persister.ReadSnapshot())
+
+}
+//lock must be held before calling this
+
+func (rf *Raft) ToCandidate(){
+	rf.serverState = Candidate
+	rf.currentTerm += 1
+	rf.votedFor = rf.me
+	rf.votesCount = 1
+	//DPrintf("tocandidate %v", rf.me)
+	rf.persist(rf.persister.ReadSnapshot())
+}
+
+//lock must be held before calling this
+func (rf *Raft) ToLeader(){
+	if rf.serverState != Candidate{
+		return
+	}
+	rf.serverState = Leader
+
+	//DPrintf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
+
+	//reinitialize nextIndex, matchIndex
+
+	//When a leader first comes to power,
+	// it initializes all nextIndex values to the index just after the
+	// last one in its log
+	rf.nextIndex = make([]int, len(rf.peers))
+	rf.matchIndex = make([]int, len(rf.peers))
+
+	for i:= 0; i < len(rf.nextIndex); i++{
+		rf.nextIndex[i] = rf.getLastLogIndex()+1
+		rf.matchIndex[i] = 0
+	}
+	//DPrintf("server:%v Term:%v is leader\n ", rf.me, rf.currentTerm)
+}
+
+//lock must be held before calling this
+func (rf *Raft) VotingFor(CandidateId int){
+	rf.votedFor = CandidateId
+	rf.lastHeartBeat = time.Now()
+}
+
 // example RequestVote RPC arguments structure.
 // field names must start with capital letters!
 type RequestVoteArgs struct {
@@ -26,7 +89,8 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	defer rf.persist()
+	defer 		rf.persist(rf.persister.ReadSnapshot())
+
 
 	reply.Term = rf.currentTerm
 
@@ -83,7 +147,8 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 	}
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	defer rf.persist()
+	defer 		rf.persist(rf.persister.ReadSnapshot())
+
 
 	if args.Term > rf.currentTerm{
 		rf.ToFollower(args.Term)
@@ -121,7 +186,7 @@ func (rf *Raft) ElectionTicker() {
 		//DPrintf("server %v starts election\n", rf.me)
 		//start elections
 		rf.ToCandidate()
-		rf.persist()
+		rf.persist(rf.persister.ReadSnapshot())
 
 		//reset the election timeout
 		rf.lastHeartBeat = time.Now()
@@ -145,108 +210,3 @@ func (rf *Raft) ElectionTicker() {
 		time.Sleep(getRandtime(100, 200))
 	}
 }
-
-
-
-/*
-package raft
-
-import (
-	"sync/atomic"
-)
-
-//
-// example RequestVote RPC arguments structure.
-// field names must start with capital letters!
-//
-type RequestVoteArgs struct {
-	// Your data here (2A, 2B).
-	Term         int
-	CandidateId  int
-	LastLogIndex int
-	LastLogTerm  int
-}
-
-//
-// example RequestVote RPC reply structure.
-// field names must start with capital letters!
-//
-type RequestVoteReply struct {
-	// Your data here (2A).
-	Term        int
-	VoteGranted bool
-}
-
-//
-// example RequestVote RPC handler.
-//
-func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-
-	if args.Term > rf.currentTerm {
-		rf.ToFollower(args.Term)
-	}
-
-	reply.Term = rf.currentTerm
-	reply.VoteGranted = false
-	if (args.Term < rf.currentTerm) || (rf.votedFor != -1 && rf.votedFor != args.CandidateId) {
-		// reply false if term < currentTerm (§5.1)
-		// if votedFor is not null and not candidateId, voted already
-	} else if args.LastLogTerm < rf.getLastLogTerm() || (args.LastLogTerm == rf.getLastLogTerm() && args.LastLogIndex < rf.getLastLogIdx()) {
-		// not up-to-date
-	} else {
-		rf.votedFor = args.CandidateId
-		reply.VoteGranted = true
-		rf.serverState = Follower
-		rf.persist()
-		send(rf.voteCh)
-	}
-}
-
-func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *RequestVoteReply) bool {
-	ok := rf.peers[server].Call("Raft.RequestVote", args, reply)
-	return ok
-}
-
-func (rf *Raft) broadcastVoteReq() {
-	rf.mu.Lock()
-	args := RequestVoteArgs{
-		rf.currentTerm,
-		rf.me,
-		rf.getLastLogIdx(),
-		rf.getLastLogTerm(),
-	}
-	rf.mu.Unlock()
-
-	votes := int32(1)
-	for i := 0; i < len(rf.peers); i++ {
-		if i == rf.me {
-			continue
-		}
-
-		go func(idx int) {
-			reply := &RequestVoteReply{}
-			if ok := rf.sendRequestVote(idx, &args, reply); ok {
-				rf.mu.Lock()
-				defer rf.mu.Unlock()
-				if reply.Term > rf.currentTerm {
-					rf.ToFollower(reply.Term)
-					return
-				}
-				if rf.serverState != Candidate || rf.currentTerm != args.Term {
-					return
-				}
-				if reply.VoteGranted {
-					atomic.AddInt32(&votes, 1)
-				}
-				if atomic.LoadInt32(&votes) > int32(len(rf.peers)/2) {
-					rf.ToLeader()
-					rf.broadcastHeartbeat()
-					send(rf.voteCh)
-				}
-			}
-		}(i)
-	}
-}
-*/
