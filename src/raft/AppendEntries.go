@@ -347,7 +347,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		}
 		// append any new entries not already in the logs
 		rf.log = append(rf.log, args.Entries[i:]...)
-		rf.persist()
+		rf.persist(rf.persister.ReadSnapshot())
 		break
 	}
 

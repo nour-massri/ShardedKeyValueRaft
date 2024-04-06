@@ -130,12 +130,6 @@ import (
 */
 package raft
 
-import (
-	"bytes"
-
-	"6.5840/labgob"
-)
-
 type InstallSnapshotArgs struct {
 	Term              int    // leader's term
 	LeaderId          int    // so follower can redirect clients
@@ -187,7 +181,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
 	// update snapshot state and persist them
 	rf.lastIncludedIndex, rf.lastIncludedTerm = args.LastIncludedIndex, args.LastIncludedTerm
-	rf.persistStatesAndSnapshot(args.Data)
+	rf.persist(args.Data)
 
 	// force the follower's log catch up with leader
 	rf.commitIndex = max(rf.commitIndex, rf.lastIncludedIndex)
@@ -199,18 +193,6 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	// 8. reset state machine using snapshot contents (and load snapshot's cluster configuration)
 	applyMsg := ApplyMsg{SnapshotValid: true, Snapshot: args.Data, SnapshotIndex: rf.lastIncludedIndex}
 	rf.applyChProxy <- applyMsg
-}
-
-func (rf *Raft) persistStatesAndSnapshot(snapshot []byte) {
-	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
-	e.Encode(rf.currentTerm)
-	e.Encode(rf.votedFor)
-	e.Encode(rf.log)
-	e.Encode(rf.lastIncludedIndex)
-	e.Encode(rf.lastIncludedTerm)
-	data := w.Bytes()
-	rf.persister.Save(data, snapshot)
 }
 
 func (rf *Raft) sendInstallSnapshot(peer int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
@@ -261,5 +243,5 @@ func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	rf.lastIncludedIndex = index
 	rf.lastIncludedTerm = rf.getLogEntry(index).Term
 	// save snapshot
-	rf.persistStatesAndSnapshot(snapshot)
+	rf.persist(snapshot)
 }

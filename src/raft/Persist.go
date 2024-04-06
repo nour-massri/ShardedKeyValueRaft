@@ -2,13 +2,12 @@ package raft
 
 import (
 	"bytes"
-	"fmt"
 
 	"6.5840/labgob"
 )
 
-func (rf *Raft) persist() {
-	// Your code here (2C).
+//save state and snapshot to desk
+func (rf *Raft) persist(snapshot []byte) {
 	buffer := new(bytes.Buffer)
 	encoder := labgob.NewEncoder(buffer)
 	encoder.Encode(rf.currentTerm)
@@ -17,11 +16,10 @@ func (rf *Raft) persist() {
 	encoder.Encode(rf.lastIncludedIndex)
 	encoder.Encode(rf.lastIncludedTerm)
 
-	rf.persister.Save(buffer.Bytes(), rf.persister.ReadSnapshot())
+	rf.persister.Save(buffer.Bytes(), snapshot)
 }
 
-
-// restore previously persisted state.
+//restore state and snapshot from desk
 func (rf *Raft) readPersist(data []byte) {
 	if data == nil || len(data) < 1 {
 		return
@@ -29,20 +27,13 @@ func (rf *Raft) readPersist(data []byte) {
 
 	r := bytes.NewBuffer(data)
 	d := labgob.NewDecoder(r)
-	var currentTerm int
-	var voteFor int
-	var logs []LogEntry
-	var lastIncludedIndex int
-	var lastIncludedTerm int
-	if d.Decode(&currentTerm) != nil || d.Decode(&voteFor) != nil || d.Decode(&logs) != nil ||
-		d.Decode(&lastIncludedIndex) != nil || d.Decode(&lastIncludedTerm) != nil {
-		fmt.Errorf("[readPersist]: Decode Error!\n")
-	} else {
-		rf.mu.Lock()
-		rf.currentTerm, rf.votedFor, rf.log = currentTerm, voteFor, logs
-		rf.lastIncludedTerm, rf.lastIncludedIndex = lastIncludedTerm, lastIncludedIndex
-		rf.commitIndex, rf.lastApplied = rf.lastIncludedIndex, rf.lastIncludedIndex
-		rf.mu.Unlock()
-	}
+
+	rf.mu.Lock()
+	d.Decode(&rf.currentTerm)
+	d.Decode(&rf.votedFor)
+	d.Decode(&rf.log)
+	d.Decode(&rf.lastIncludedIndex)
+	d.Decode(&rf.lastIncludedTerm)
+	rf.mu.Unlock()
 }
 

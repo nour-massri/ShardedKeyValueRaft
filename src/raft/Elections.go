@@ -199,7 +199,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		rf.votedFor = args.CandidateId
 		reply.VoteGranted = true
 		rf.serverState = Follower
-		rf.persist()
+		rf.persist(rf.persister.ReadSnapshot())
 		send(rf.voteCh)
 	}
 }

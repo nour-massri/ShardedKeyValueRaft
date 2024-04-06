@@ -512,7 +512,7 @@ func (rf *Raft) ToFollower(Term int){
 	rf.currentTerm = Term
 	rf.votedFor = -1
 	rf.serverState = Follower
-	rf.persist()
+	rf.persist(rf.persister.ReadSnapshot())
 
 }
 //lock must be held before calling this
@@ -523,7 +523,7 @@ func (rf *Raft) ToCandidate(){
 	rf.votedFor = rf.me
 	rf.votesCount = 1
 	DPrintf("tocandidate %v", rf.me)
-	rf.persist()
+	rf.persist(rf.persister.ReadSnapshot())
 	go rf.broadcastVoteReq()
 }
 
@@ -631,7 +631,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	//defer 	rf.persist()
 
 	if(rf.serverState != Leader){
 		return -1, rf.currentTerm, false
@@ -641,7 +640,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	// respond after entry applied to state machine (§5.3)
 	rf.log = append(rf.log, LogEntry{Command: command, Term: rf.currentTerm})
 	////////
-	rf.persist()
+	rf.persist(rf.persister.ReadSnapshot())
 	rf.broadcastHeartbeat()
 
 	return rf.getLastLogIndex(), rf.currentTerm, true
