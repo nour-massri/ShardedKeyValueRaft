@@ -463,16 +463,6 @@ type Raft struct {
 }
 
 //lock must be held before calling this
-func (rf *Raft) isCandidateAtLeastUpToDate(LastLogIndex int, LastLogTerm int)bool{
-
-	//DPrintf("current term:%v index:%v given term%v index%v\n", rf.getLastLogTerm(), rf.getLastLogIndex(), LastLogTerm, LastLogIndex)
-	if(LastLogTerm == rf.getLastLogTerm() ){
-		return LastLogIndex >= rf.getLastLogIndex()
-	}
-	return LastLogTerm > rf.getLastLogTerm()
-
-}
-//lock must be held before calling this
 func (rf *Raft) logLen() int {
 	return len(rf.log) + rf.lastIncludedIndex
 }
