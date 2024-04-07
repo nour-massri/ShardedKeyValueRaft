@@ -100,7 +100,6 @@ package raft
 import (
 	//	"bytes"
 
-	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -239,35 +238,24 @@ func send(ch chan bool) {
 }
 
 func (rf *Raft) updateCommitIndex() {
-
-		// for n := rf.getLastLogIndex(); n > rf.commitIndex; n-- {
-	// 	cnt := 1
-	// 	if rf.getLogEntry(n).Term != rf.currentTerm {
-	// 		continue
-	// 	}
-	// 	for i := range(rf.peers){
-	// 		if i != rf.me && rf.matchIndex[i] >= n {
-	// 			cnt++
-	// 		}
-	// 	}
-	// 	if cnt > len(rf.peers) / 2 {
-	// 		rf.commitIndex = n
-	// 		DPrintf("leader %v commit index:%v", rf.me, rf.commitIndex)
-	// 		//go rf.commitLogs()
-	// 		break;
-	// 	}
-	// }
-	//DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)
-
-	rf.matchIndex[rf.me] = rf.logLen() - 1
-	copyMatchIndex := make([]int, len(rf.matchIndex))
-	copy(copyMatchIndex, rf.matchIndex)
-	sort.Sort(sort.Reverse(sort.IntSlice(copyMatchIndex)))
-	N := copyMatchIndex[len(copyMatchIndex)/2]
-	if N > rf.commitIndex && rf.getLogEntry(N).Term == rf.currentTerm {
-		rf.commitIndex = N
-		rf.Commit()
+	for n := rf.getLastLogIndex(); n >= rf.lastIncludedIndex; n-- {
+		cnt := 1
+		if rf.getLogEntry(n).Term != rf.currentTerm {
+			continue
+		}
+		for i := range(rf.peers){
+			if i != rf.me && rf.matchIndex[i] >= n {
+				cnt++
+			}
+		}
+		if cnt > len(rf.peers) / 2 {
+			rf.commitIndex = n
+			DPrintf("leader %v commit index:%v", rf.me, rf.commitIndex)
+			rf.Commit()
+			break;
+		}
 	}
+	DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)
 }
 
 
