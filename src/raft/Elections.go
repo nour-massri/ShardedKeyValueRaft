@@ -1,49 +1,3 @@
-/*
-
-func (rf *Raft) ElectionTicker() {
-
-	for !rf.killed(){
-		// Your code here (3A)
-		// Check if a leader election should be started.
-		rf.mu.Lock()
-		lastHeartBeat := rf.lastHeartBeat
-		serverState := rf.serverState
-
-		if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(800,1200){
-			rf.mu.Unlock()
-			time.Sleep(getRandtime(400, 500))
-			continue
-		}
-		//DPrintf("server %v starts election\n", rf.me)
-		//start elections
-		rf.ToCandidate()
-		rf.persist()
-
-		//reset the election timeout
-		rf.lastHeartBeat = time.Now()
-
-		requestVoteArgs := RequestVoteArgs{
-			Term: rf.currentTerm,
-			 CandidatId: rf.me,
-			LastLogIndex: rf.getLastLogIndex(),
-			LastLogTerm: rf.getLastLogTerm(),
-		}
-		rf.mu.Unlock()
-		for peer := 0; peer < len(rf.peers); peer++{
-			if peer == rf.me{
-				continue
-			}
-			go rf.sendRequestVote(peer, &requestVoteArgs, &RequestVoteReply{})
-		}
-
-		// pause for a random amount of time between 150 and 250
-		// milliseconds.
-		time.Sleep(getRandtime(400, 500))
-	}
-}
-
-*/
-
 package raft
 
 import (
@@ -78,7 +32,7 @@ func (rf *Raft) ToCandidate(){
 	rf.currentTerm += 1
 	rf.votedFor = rf.me
 	rf.votesCount = 1
-	DPrintf("tocandidate %v", rf.me)
+	//DPrintf("tocandidate %v", rf.me)
 	rf.persist(rf.persister.ReadSnapshot())
 	go rf.broadcastVoteReq()
 }
@@ -146,7 +100,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		rf.persist(rf.persister.ReadSnapshot())
 
 		rf.lastHeartBeat = time.Now()
-		send(rf.voteCh)
+		send(rf.electionResetCh)
 		//DPrintf("server: %v term:%v Voted: %v\n", rf.me, rf.currentTerm, args.CandidatId)
 	} else {
 		reply.VoteGranted = false
@@ -184,7 +138,7 @@ func (rf *Raft) sendRequestVote(server int){
 	if rf.votesCount > len(rf.peers)/2 {
 		rf.ToLeader()
 		rf.lastHeartBeat = time.Now()
-		send(rf.voteCh)
+		send(rf.electionResetCh)
 		rf.broadcastHeartbeat()
 	}
 }
@@ -192,38 +146,12 @@ func (rf *Raft) sendRequestVote(server int){
 
 func (rf *Raft) broadcastVoteReq() {
 
-	// for !rf.killed(){
-	// 	// Your code here (3A)
-	// 	// Check if a leader election should be started.
-	// 	rf.mu.Lock()
-	// 	lastHeartBeat := rf.lastHeartBeat
-	// 	serverState := rf.serverState
-
-	// 	if serverState == Leader || time.Since(lastHeartBeat) < getRandtime(300,500){
-	// 		rf.mu.Unlock()
-	// 		time.Sleep(getRandtime(100, 100))
-	// 		continue
-	// 	}
-	// 	//DPrintf("server %v starts election\n", rf.me)
-	// 	//start elections
-	// 	rf.ToCandidate()
-	// 	rf.persist()
-
-	// 	//reset the election timeout
-	// 	rf.lastHeartBeat = time.Now()
-
-	// 	rf.mu.Unlock()
-
-		for i := 0; i < len(rf.peers); i++ {
-			if i == rf.me {
-				continue
-			}
-	
-			 go rf.sendRequestVote(i);
-			
+	for i := 0; i < len(rf.peers); i++ {
+		if i == rf.me {
+			continue
 		}
-
-	//	time.Sleep(getRandtime(100, 100))
-	//}
+		go rf.sendRequestVote(i);
+		
+	}
 }
 

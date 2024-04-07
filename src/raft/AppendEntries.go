@@ -63,7 +63,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		reply.XIndex = 0
 		reply.XLen = rf.logLen()
 		rf.lastHeartBeat = time.Now()
-		send(rf.appendCh)
+		send(rf.electionResetCh)
 
 		if args.Term < rf.currentTerm {
 			//1. Reply false if term < currentTerm (§5.1)

@@ -156,7 +156,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	if args.Term > rf.currentTerm {
 		rf.ToFollower(args.Term)
 	}
-	send(rf.appendCh)
+	send(rf.electionResetCh)
 
 	// check snapshot may expire by lock competition, otherwise rf.logs may overflow below
 	if args.LastIncludedIndex <= rf.lastIncludedIndex {
