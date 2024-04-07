@@ -74,23 +74,16 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	// 		if j < len(args.LogEntries) {
 	// 			DPrintf("Leader %v term=%v overwriting logs at follower %v term=%v: len(rf.log)=%v i=%v len(args.entries)=%v j=%v\n", args.LeaderId, args.Term, rf.me, rf.currentTerm, len(rf.log), i, len(args.LogEntries),j)
 	// 		}
-			// rf.log = append(rf.getLogSlice(rf.lastIncludedIndex, args.PrevLogIndex + 1), args.LogEntries...)
-			// rf.persist(rf.persister.ReadSnapshot())
 
-			index := args.PrevLogIndex
-			for i := 0; i < len(args.LogEntries); i++ {
-				index++
-				if index < rf.logLen() {
-					if rf.getLogEntry(index).Term == args.LogEntries[i].Term {
-						continue
-					} else {
-						rf.log = rf.log[:index-rf.lastIncludedIndex]
-					}
-				}
-				// append any new entries not already in the logs
-				rf.log = append(rf.log, args.LogEntries[i:]...)
+			l := args.PrevLogIndex + 1
+			r := 0
+			for ;l < rf.logLen() && r < len(args.LogEntries) && rf.getLogEntry(l).Term == args.LogEntries[r].Term;{
+				l++
+				r++
+			}
+			if r < len(args.LogEntries){
+				rf.log = append(rf.getLogSlice(rf.lastIncludedIndex, l), args.LogEntries[r:]...)
 				rf.persist(rf.persister.ReadSnapshot())
-				break
 			}
 
 			//5. If leaderCommit > commitIndex, set commitIndex =
