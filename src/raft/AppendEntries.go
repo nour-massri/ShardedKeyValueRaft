@@ -81,7 +81,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 				l++
 				r++
 			}
-			if r < len(args.LogEntries){
+			if r < len(args.LogEntries){//VIP if args.logentries finishes before l gets to loglen
 				rf.log = append(rf.getLogSlice(rf.lastIncludedIndex, l), args.LogEntries[r:]...)
 				rf.persist(rf.persister.ReadSnapshot())
 			}
@@ -123,25 +123,32 @@ func (rf *Raft) sendAppendEntries(peer int) {
 			return
 		}
 
-		if reply.Success {
-			rf.updatePeerMatch(peer, args.PrevLogIndex+len(args.LogEntries))
-			rf.updateCommitIndex()
-		} else {
-
-			index := reply.XIndex
-			if reply.XTerm != -1 {
-				logSize := rf.logLen()
-				for i := rf.lastIncludedIndex; i < logSize; i++ {
-					if rf.getLogEntry(i).Term != reply.XTerm {
-						continue
-					}
-					for i < logSize && rf.getLogEntry(i).Term == reply.XTerm {
-						i++
-					}
-					index = i
+		if !reply.Success {
+			if reply.XTerm == -1 {
+				//Case 3: follower's log is too short:
+    			//nextIndex = XLen
+				rf.nextIndex[peer] = min(rf.logLen(), reply.XLen)
+			} else {
+				leaderLastXTerm := -1
+				i := rf.lastIncludedIndex;
+				for ; i < rf.logLen() && rf.getLogEntry(i).Term != reply.XTerm; i++ {
+				}
+				for ; i < rf.logLen() && rf.getLogEntry(i).Term == reply.XTerm ; i++{
+					leaderLastXTerm = i
+				}
+				if leaderLastXTerm == -1{
+					//  Case 1: leader doesn't have XTerm:	
+					//  nextIndex = XIndex
+					rf.nextIndex[peer] = reply.XIndex
+				} else{
+					//  Case 2: leader has XTerm:
+    				// nextIndex = leader's last entry for XTerm
+					rf.nextIndex[peer] = leaderLastXTerm
 				}
 			}
-			rf.nextIndex[peer] = min(rf.logLen(), index)
+		} else {
+			rf.updatePeerMatch(peer, args.PrevLogIndex+len(args.LogEntries))
+			rf.updateCommitIndex()
 		}
 }
 
