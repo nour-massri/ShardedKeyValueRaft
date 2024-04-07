@@ -95,10 +95,8 @@ func (rf *Raft) Snapshot(index int, snapshot []byte) {
 		return
 	}
 
-	rf.log = append(make([]LogEntry, 0), rf.log[index-rf.lastIncludedIndex:]...)
-	// update new lastIncludedIndex and lastIncludedTerm
+	rf.log = rf.getLogSlice(index, rf.logLen())
 	rf.lastIncludedIndex = index
 	rf.lastIncludedTerm = rf.getLogEntry(index).Term
-	// save snapshot
 	rf.persist(snapshot)
 }
