@@ -112,26 +112,22 @@ func (rf *Raft) sendAppendEntries(peer int) {
 		reply := &AppendEntriesReply{}
 		ok := rf.peers[peer].Call("Raft.AppendEntries", &args, &reply)
 		rf.mu.Lock()
+		defer rf.mu.Unlock()
+
 		if !ok || rf.serverState != Leader || rf.currentTerm != args.Term {
-			rf.mu.Unlock()
 			return
 		}
 
 		if reply.Term > rf.currentTerm {
 			rf.ToFollower(reply.Term)
-			rf.mu.Unlock()
 			return
 		}
 
-		// update nextIndex and matchIndex for follower
 		if reply.Success {
-			rf.matchIndex[peer] = args.PrevLogIndex+len(args.LogEntries)
-			rf.nextIndex[peer] = rf.matchIndex[peer] + 1
+			rf.updatePeerMatch(peer, args.PrevLogIndex+len(args.LogEntries))
 			rf.updateCommitIndex()
-			rf.mu.Unlock()
-			return
 		} else {
-			// decrement nextIndex and retry
+
 			index := reply.XIndex
 			if reply.XTerm != -1 {
 				logSize := rf.logLen()
@@ -146,12 +142,10 @@ func (rf *Raft) sendAppendEntries(peer int) {
 				}
 			}
 			rf.nextIndex[peer] = min(rf.logLen(), index)
-			rf.mu.Unlock()
 		}
-	
 }
 
-func (rf *Raft) broadcastHeartbeat() {
+func (rf *Raft) HeartBeatTicker() {
 	DPrintf("%d send logs: %v", rf.me, rf.log)
 
 	for i := 0; i < len(rf.peers); i++ {

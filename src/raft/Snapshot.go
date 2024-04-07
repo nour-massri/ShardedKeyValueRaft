@@ -1,133 +1,3 @@
-/*
-package raft
-
-import (
-
-	"time"
-
-)
-
-// the service says it has created a snapshot that has
-// all info up to and including index. this means the
-// service no longer needs the log through (and including)
-// that index. Raft should now trim its log as much as possible.
-
-	func (rf *Raft) Snapshot(index int, snapshot []byte) {
-		DPrintf("snapshot")
-
-		// Your code here (3D).
-		rf.mu.Lock()
-		DPrintf("snapshot in")
-		defer rf.mu.Unlock()
-		defer rf.persist()
-
-		if index <= rf.lastIncludedIndex || index > rf.getLastLogIndex(){
-			return
-		}
-		DPrintf("snapshot server%v: %v %v\n",rf.me, index, rf.getLastLogIndex() + 1)
-
-		rf.lastIncludedIndex = index
-		rf.lastIncludedTerm = rf.getLogEntry(index).Term
-		rf.snapshot = snapshot
-
-		rf.log = rf.getLogSlice(index, rf.getLastLogIndex()+1)
-
-}
-
-	func (rf *Raft) readSnapshot(snapshot []byte) {
-		if snapshot == nil || len(snapshot) < 1 {
-			return
-		}
-		DPrintf("reading valid snapshot")
-		rf.snapshot = snapshot
-		rf.applyCh <- ApplyMsg{SnapshotValid: true, Snapshot: snapshot}
-	}
-
-	type InstallSnapshotsArgs struct {
-		Term int
-		LeaderId int
-		LastIncludedIndex int
-		LastIncludedTerm int
-		Data []byte
-	}
-
-	type InstallSnapshotsReply struct {
-		Term int
-	}
-
-// example InstallSnapshot RPC handler.
-
-	func (rf *Raft) InstallSnapshot(args *InstallSnapshotsArgs, reply *InstallSnapshotsReply){
-		DPrintf("Install\n")
-
-		rf.mu.Lock()
-		defer rf.mu.Unlock()
-		defer rf.persist()
-
-		reply.Term = rf.currentTerm
-		//1. Reply immediately if term < currentTerm
-		if args.Term < rf.currentTerm{
-			return
-		}
-
-		rf.lastHeartBeat = time.Now()
-		if args.Term > rf.currentTerm{
-			rf.ToFollower(args.Term)
-		}
-		if args.LastIncludedIndex <= rf.lastIncludedIndex {
-			return
-		}
-
-		if args.LastIncludedIndex < rf.logLen()-1 {
-			// the args.LastIncludedIndex log has agreed, if there are more logs, just retain them
-			rf.log = append(make([]LogEntry, 0), rf.log[args.LastIncludedIndex-rf.lastIncludedIndex:]...)
-		} else {
-			// 7. discard the entire log
-			// empty log use for AppendEntries RPC consistency check
-			rf.log = []LogEntry{{nil, args.LastIncludedTerm,}}
-		}
-
-		rf.lastIncludedIndex = args.LastIncludedIndex
-		rf.lastIncludedTerm = args.LastIncludedTerm
-		rf.snapshot = args.Data
-
-		rf.lastApplied = max(rf.lastApplied, args.LastIncludedIndex)
-		rf.commitIndex = max(rf.commitIndex, args.LastIncludedIndex)
-
-		if rf.lastApplied > rf.lastIncludedIndex{
-			return
-		}
-
-		//8. Reset state machine using snapshot contents (and load snapshot’s cluster configuration)
-		applyMsg := ApplyMsg{SnapshotValid: true, Snapshot: args.Data}
-		rf.applyCh <- applyMsg
-
-}
-
-	func (rf *Raft) sendInstallSnapshot(peer int, args InstallSnapshotsArgs, reply InstallSnapshotsReply){
-		DPrintf("sendInstall\n")
-
-		ok := rf.peers[peer].Call("Raft.InstallSnapshot", &args, &reply)
-		if !ok {
-			return
-		}
-
-		rf.mu.Lock()
-		defer rf.mu.Unlock()
-		defer rf.persist()
-
-
-		if rf.serverState != Leader || args.Term != rf.currentTerm {
-			return
-		}
-		if reply.Term > rf.currentTerm {
-			rf.ToFollower(reply.Term)
-			return
-		}
-		rf.updateMatchIndex(peer, rf.lastIncludedIndex)
-
-}
-*/
 package raft
 
 type InstallSnapshotArgs struct {
@@ -213,18 +83,15 @@ func (rf *Raft) sendInstallSnapshot(peer int)  {
 		rf.ToFollower(reply.Term)
 		return
 	}
-
-	rf.matchIndex[peer] = rf.lastIncludedIndex
-	rf.nextIndex[peer] = rf.matchIndex[peer] + 1
+	rf.updatePeerMatch(peer, rf.lastIncludedIndex)
 	rf.updateCommitIndex()
+
 }
 
 func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
-	// lock competition may delay snapshot call, check it,
-	// otherwise rf.logAt(index) may out of bounds
 	if index <= rf.lastIncludedIndex {
 		return
 	}

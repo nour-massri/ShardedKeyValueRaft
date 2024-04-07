@@ -236,6 +236,10 @@ func (rf *Raft) GetState() (int, bool) {
 
 	return rf.currentTerm, rf.serverState == Leader
 }
+func (rf *Raft) updatePeerMatch(peer int, match int) {
+	rf.matchIndex[peer] = match
+	rf.nextIndex[peer] = rf.matchIndex[peer] + 1
+}
 
 func (rf *Raft) updateCommitIndex() {
 	for n := rf.getLastLogIndex(); n >= rf.lastIncludedIndex; n-- {
@@ -297,7 +301,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.log = append(rf.log, LogEntry{Command: command, Term: rf.currentTerm})
 	////////
 	rf.persist(rf.persister.ReadSnapshot())
-	rf.broadcastHeartbeat()
+	rf.HeartBeatTicker()
 
 	return rf.getLastLogIndex(), rf.currentTerm, true
 }
@@ -363,10 +367,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 func (rf *Raft) CommitTicker() {
 	for {
 		entry := <-rf.applyChProxy
-		// Apply entry here
 		rf.applyCh <- entry
-		//fmt.Println("Applying entry:", entry)
-
 	}
 }
 
@@ -390,7 +391,7 @@ func (rf *Raft) Ticker() {
 			}
 		case Leader:
 			time.Sleep(heartbeatTime)
-			rf.broadcastHeartbeat()
+			rf.HeartBeatTicker()
 		}
 	}
 }

@@ -34,7 +34,7 @@ func (rf *Raft) ToCandidate(){
 	rf.votesCount = 1
 	//DPrintf("tocandidate %v", rf.me)
 	rf.persist(rf.persister.ReadSnapshot())
-	go rf.broadcastVoteReq()
+	go rf.ElectionTicker()
 }
 
 //lock must be held before calling this
@@ -139,12 +139,12 @@ func (rf *Raft) sendRequestVote(server int){
 		rf.ToLeader()
 		rf.lastHeartBeat = time.Now()
 		send(rf.electionResetCh)
-		rf.broadcastHeartbeat()
+		rf.HeartBeatTicker()
 	}
 }
 
 
-func (rf *Raft) broadcastVoteReq() {
+func (rf *Raft) ElectionTicker() {
 
 	for i := 0; i < len(rf.peers); i++ {
 		if i == rf.me {
