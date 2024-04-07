@@ -1,28 +1,3 @@
-/*
-	update commit index
-
-	//for leaders rf.commitIndex >= rf.logStartIndex:
-	// for n := rf.getLastLogIndex(); n > rf.commitIndex; n-- {
-	// 	cnt := 1
-	// 	if rf.getLogEntry(n).Term != rf.currentTerm {
-	// 		continue
-	// 	}
-	// 	for i := range(rf.peers){
-	// 		if i != rf.me && rf.matchIndex[i] >= n {
-	// 			cnt++
-	// 		}
-	// 	}
-	// 	if cnt > len(rf.peers) / 2 {
-	// 		rf.commitIndex = n
-	// 		DPrintf("leader %v commit index:%v", rf.me, rf.commitIndex)
-	// 		//go rf.commitLogs()
-	// 		break;
-	// 	}
-	// }
-	//DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)
-}
-}*/
-
 package raft
 
 import "time"
@@ -123,7 +98,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			if args.LeaderCommit > rf.commitIndex{
 				rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIndex())
 				DPrintf("follower %v commit index:%v\n", rf.me, rf.commitIndex)
-				//go rf.commitLogs()
 				rf.Commit()
 			}
 		}
@@ -199,23 +173,12 @@ func (rf *Raft) broadcastHeartbeat() {
 					return
 				}
 
-				if rf.nextIndex[peer]-rf.lastIncludedIndex < 1 {
+				if rf.nextIndex[peer] <= rf.lastIncludedIndex {
 					rf.sendInstallSnapshot(peer)
-					return
+				}else {
+					rf.sendAppendEntries(peer)
 				}
-				rf.sendAppendEntries(peer)
 		}(i)
 	}
 }
 
-// Commit should be called after commitIndex updated
-func (rf *Raft) Commit() {
-	rf.lastApplied = max(rf.lastApplied, rf.lastIncludedIndex)
-	rf.commitIndex = max(rf.commitIndex, rf.lastIncludedIndex)
-	for rf.lastApplied < rf.commitIndex {
-		rf.lastApplied++
-		log := rf.getLogEntry(rf.lastApplied)
-		applyMsg := ApplyMsg{CommandValid: true, Command: log.Command, CommandIndex: rf.lastApplied}
-		rf.applyChProxy <- applyMsg
-	}
-}

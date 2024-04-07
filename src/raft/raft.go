@@ -189,6 +189,14 @@ type Raft struct {
 	lastIncludedTerm int
 }
 
+func send(channel chan bool) {
+	select {
+	case <-channel:
+	default:
+	}
+	channel <- true
+}
+
 //lock must be held before calling this
 func (rf *Raft) logLen() int {
 	return len(rf.log) + rf.lastIncludedIndex
@@ -229,14 +237,6 @@ func (rf *Raft) GetState() (int, bool) {
 	return rf.currentTerm, rf.serverState == Leader
 }
 
-func send(ch chan bool) {
-	select {
-	case <-ch:
-	default:
-	}
-	ch <- true
-}
-
 func (rf *Raft) updateCommitIndex() {
 	for n := rf.getLastLogIndex(); n >= rf.lastIncludedIndex; n-- {
 		cnt := 1
@@ -258,7 +258,18 @@ func (rf *Raft) updateCommitIndex() {
 	DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)
 }
 
+// Commit should be called after commitIndex updated
+func (rf *Raft) Commit() {
+	rf.lastApplied = max(rf.lastApplied, rf.lastIncludedIndex)
+	rf.commitIndex = max(rf.commitIndex, rf.lastIncludedIndex)
 
+	for rf.lastApplied < rf.commitIndex {
+		rf.applyChProxy <- ApplyMsg{CommandValid: true, 
+			Command: rf.getLogEntry(rf.lastApplied + 1).Command,
+			CommandIndex: rf.lastApplied + 1}
+		rf.lastApplied++
+	}
+}
 // the service using Raft (e.g. a k/v server) wants to start
 // agreement on the next command to be appended to Raft's log. if this
 // server isn't the leader, returns false. otherwise start the
@@ -309,15 +320,7 @@ func (rf *Raft) killed() bool {
 	z := atomic.LoadInt32(&rf.dead)
 	return z == 1
 }
-func (rf *Raft) commitLogs() {
-	for {
-		entry := <-rf.applyChProxy
-		// Apply entry here
-		rf.applyCh <- entry
-		//fmt.Println("Applying entry:", entry)
 
-	}
-}
 //
 // the service or tester wants to create a Raft server. the ports
 // of all the Raft servers (including this one) are in peers[]. this
@@ -352,12 +355,22 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
 
-	go rf.service()
-	go rf.commitLogs()
+	go rf.Ticker()
+	go rf.CommitTicker()
 	return rf
 }
 
-func (rf *Raft) service() {
+func (rf *Raft) CommitTicker() {
+	for {
+		entry := <-rf.applyChProxy
+		// Apply entry here
+		rf.applyCh <- entry
+		//fmt.Println("Applying entry:", entry)
+
+	}
+}
+
+func (rf *Raft) Ticker() {
 	for !rf.killed(){
 
 		rf.mu.Lock()
