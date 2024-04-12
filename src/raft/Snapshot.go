@@ -1,19 +1,15 @@
 package raft
 
-import (
-	"time"
-)
-
 type InstallSnapshotArgs struct {
-	Term              int    
-	LeaderId          int   
-	LastIncludedIndex int 
-	LastIncludedTerm  int  
-	Data              []byte
+	Term int
+	LeaderId int
+	LastIncludedIndex int
+	LastIncludedTerm  int
+	Data []byte
 }
 
 type InstallSnapshotReply struct {
-	Term int
+	Term int // currentTerm, for leader to update itself
 }
 
 func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
@@ -21,63 +17,60 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	defer rf.mu.Unlock()
 	reply.Term = rf.currentTerm
 
-	// 1. reply false if term < currentTerm
-	if args.Term < rf.currentTerm {
-		return
-	}
+
 	if args.Term > rf.currentTerm {
 		rf.ToFollower(args.Term)
 	}
-	rf.lastHeartBeat = time.Now()
 
+	// 1. Reply immediately if term < currentTerm
+	if args.Term < rf.currentTerm {
+		return
+	}
+
+	send(rf.electionResetCh)
+
+	//5. Save snapshot file, discard any existing or partial snapshot
+	//with a smaller index 
+	//in other words discard installsnapshot if smaller index
 	if args.LastIncludedIndex <= rf.lastIncludedIndex {
 		return
 	}
 
-	// 6. if existing log entry has the same index and term as snapshot's last included entry,
-	// retain log entries following it and reply
-	if args.LastIncludedIndex < rf.logLen()-1 {
-		// the args.LastIncludedIndex log has agreed, if there are more logs, just retain them
-		rf.log = append(make([]LogEntry, 0), rf.log[args.LastIncludedIndex-rf.lastIncludedIndex:]...)
+	if args.LastIncludedIndex + 1 < rf.logLen() {
+		// 6. if existing log entry has the same index and term as snapshot's last included entry,
+		// retain log entries following it and reply
+		rf.log = rf.getLogSlice(args.LastIncludedIndex, rf.logLen())
 	} else {
 		// 7. discard the entire log
-		// empty log use for AppendEntries RPC consistency check
 		rf.log = []LogEntry{{args.LastIncludedTerm, nil}}
 	}
 
-	// update snapshot state and persist them
+	// 8. reset state machine using snapshot contents (and load snapshot's cluster configuration)
 	rf.lastIncludedIndex, rf.lastIncludedTerm = args.LastIncludedIndex, args.LastIncludedTerm
-	rf.persist(args.Data)
-
-	// force the follower's log catch up with leader
 	rf.commitIndex = max(rf.commitIndex, rf.lastIncludedIndex)
 	rf.lastApplied = max(rf.lastApplied, rf.lastIncludedIndex)
-	if rf.lastApplied > rf.lastIncludedIndex {
-		return
+	rf.persist(args.Data)
+
+
+	if rf.lastApplied <= rf.lastIncludedIndex {
+		// 8. reset state machine using snapshot contents (and load snapshot's cluster configuration)
+		rf.applyChProxy  <- ApplyMsg{SnapshotValid: true, Snapshot: args.Data, SnapshotIndex: rf.lastIncludedIndex}
 	}
 
-	// 8. reset state machine using snapshot contents (and load snapshot's cluster configuration)
-	applyMsg := ApplyMsg{SnapshotValid: true, Snapshot: args.Data, SnapshotIndex: rf.lastIncludedIndex}
-	rf.applyChProxy <- applyMsg
 }
 
-//need lock
-func (rf *Raft) sendInstallSnapshot(peer int) {
-
-	//rf.mu.Lock()
+func (rf *Raft) sendInstallSnapshot(peer int)  {
 	args := InstallSnapshotArgs{
 		Term:              rf.currentTerm,
-		LeaderId:          rf.me,
 		LastIncludedIndex: rf.lastIncludedIndex,
 		LastIncludedTerm:  rf.lastIncludedTerm,
+		LeaderId:          rf.me,
 		Data:              rf.persister.ReadSnapshot(),
 	}
 
-	reply := InstallSnapshotReply{}
 	rf.mu.Unlock()
-
+	reply := InstallSnapshotReply{}
 	ok := rf.peers[peer].Call("Raft.InstallSnapshot", &args, &reply)
-
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -89,23 +82,20 @@ func (rf *Raft) sendInstallSnapshot(peer int) {
 		rf.ToFollower(reply.Term)
 		return
 	}
-	rf.updateMatchIndex(peer, rf.lastIncludedIndex)
+	rf.updatePeerMatch(peer, rf.lastIncludedIndex)
+	rf.updateCommitIndex()
+
 }
 
 func (rf *Raft) Snapshot(index int, snapshot []byte) {
-	DPrintf("snapshot")
-
 	rf.mu.Lock()
-	DPrintf("snapshot in")
 	defer rf.mu.Unlock()
 
-	if index <= rf.lastIncludedIndex || index > rf.getLastLogIndex(){
+	if index <= rf.lastIncludedIndex {
 		return
 	}
-	DPrintf("snapshot server%v: %v %v\n",rf.me, index, rf.getLastLogIndex() + 1)
 
-	rf.log = rf.getLogSlice(index, rf.getLastLogIndex() + 1)
-
+	rf.log = rf.getLogSlice(index, rf.logLen())
 	rf.lastIncludedIndex = index
 	rf.lastIncludedTerm = rf.getLogEntry(index).Term
 	rf.persist(snapshot)
