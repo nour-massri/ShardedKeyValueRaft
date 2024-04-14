@@ -1,12 +1,14 @@
 package kvraft
 
 import (
-	"6.5840/labgob"
-	"6.5840/labrpc"
-	"6.5840/raft"
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
+
+	"6.5840/labgob"
+	"6.5840/labrpc"
+	"6.5840/raft"
 )
 
 const Debug = false
@@ -23,6 +25,13 @@ type Op struct {
 	// Your definitions here.
 	// Field names must start with capital letters,
 	// otherwise RPC will break.
+	OpType string
+	Key   string
+	Value string
+	ClientId int
+	Serial int
+
+	Rnd int64
 }
 
 type KVServer struct {
@@ -35,21 +44,77 @@ type KVServer struct {
 	maxraftstate int // snapshot if log grows this big
 
 	// Your definitions here.
+	stateMachine map[string]string
+	lastClientSerial map[int]int
+	commandChannel map[int]chan Op
 }
 
+func (kv *KVServer) sendCommand(op Op) Err{
+	index, _, isLeader := kv.rf.Start(op)
+	if !isLeader{
+		return ErrWrongLeader
+	}
+	kv.mu.Lock()
+	if _, ok := kv.commandChannel[index]; !ok {
+		kv.commandChannel[index] = make(chan Op, 1)
+	}
+	kv.mu.Unlock()
+	res := getChannelWithTimeout(kv.commandChannel[index])
+	if !equal(op, res){
+		return ErrWrongLeader
+	}
+	return OK
+}
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
+	op := Op{
+		OpType: "Get",
+		Key: args.Key,
+		ClientId: args.ClientId,
+		Rnd: nrand(),
+
+	}
+	err := kv.sendCommand(op)
+	if err == OK{
+		kv.mu.Lock()
+		reply.Value = kv.stateMachine[args.Key]
+		kv.mu.Unlock()
+	} else {
+		reply.Err = err
+	}
 }
 
 func (kv *KVServer) Put(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
+	op := Op{
+		OpType: "Put",
+		Key: args.Key,
+		Value: args.Value,
+		ClientId: args.ClientId,
+		Serial: args.Serial,
+		Rnd: nrand(),
+	}
+	err := kv.sendCommand(op)
+	reply.Err = err
+
 }
 
 func (kv *KVServer) Append(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
-}
+	op := Op{
+		OpType: "Append",
+		Key: args.Key,
+		Value: args.Value,
+		ClientId: args.ClientId,
+		Serial: args.Serial,
+		Rnd: nrand(),
 
+	}
+	err := kv.sendCommand(op)
+	reply.Err = err
+}
+ 
 // the tester calls Kill() when a KVServer instance won't
 // be needed again. for your convenience, we supply
 // code to set rf.dead (without needing a lock),
@@ -67,6 +132,52 @@ func (kv *KVServer) Kill() {
 func (kv *KVServer) killed() bool {
 	z := atomic.LoadInt32(&kv.dead)
 	return z == 1
+}
+
+func send(sendch chan Op, op Op) {
+	select {
+	case <-sendch:
+	default:
+	}
+	sendch <- op
+}
+
+func getChannelWithTimeout(ch chan Op) Op {
+	select {
+	case ret := <-ch:
+		return ret
+	case <-time.After(time.Duration(400) * time.Millisecond):
+		return Op{}
+	}
+}
+
+func equal(a Op, b Op) bool {
+	return a.Rnd == b.Rnd
+}
+
+func (kv *KVServer) applyTicker() {
+	for !kv.killed(){
+		applyMsg := <-kv.applyCh
+		op := applyMsg.Command.(Op)
+		kv.mu.Lock()
+		if op.OpType == "Get"{
+		} else {
+			lastSerial, exists := kv.lastClientSerial[op.ClientId]
+			if !exists || lastSerial < op.Serial{
+				if op.OpType == "Put"{
+					kv.stateMachine[op.Key] = op.Value
+				} else if op.OpType == "Append"{
+					kv.stateMachine[op.Key] += op.Value
+				}
+				kv.lastClientSerial[op.ClientId] = op.Serial
+			}
+		}
+		if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
+			kv.commandChannel[applyMsg.CommandIndex] = make(chan Op, 1)
+		}
+		kv.mu.Unlock()
+		send(kv.commandChannel[applyMsg.CommandIndex], op)
+	}
 }
 
 // servers[] contains the ports of the set of
@@ -94,6 +205,12 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
+	
+	kv.stateMachine = make(map[string]string)
+	kv.lastClientSerial = make(map[int]int)
+	kv.commandChannel  = make(map[int]chan Op)
+
+	go kv.applyTicker()
 
 	// You may need initialization code here.
 
