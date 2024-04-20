@@ -40,7 +40,7 @@ type KVServer struct {
 	rf      *raft.Raft
 	applyCh chan raft.ApplyMsg
 	dead    int32 // set by Kill()
-
+	persister *raft.Persister
 	maxraftstate int // snapshot if log grows this big
 
 	// Your definitions here.
@@ -158,6 +158,10 @@ func equal(a Op, b Op) bool {
 func (kv *KVServer) applyTicker() {
 	for !kv.killed(){
 		applyMsg := <-kv.applyCh
+		if applyMsg.SnapshotValid{
+			kv.readPersist(applyMsg.Snapshot)
+			continue
+		}
 		op := applyMsg.Command.(Op)
 		kv.mu.Lock()
 		if op.OpType == "Get"{
@@ -176,6 +180,10 @@ func (kv *KVServer) applyTicker() {
 			kv.commandChannel[applyMsg.CommandIndex] = make(chan Op, 1)
 		}
 		kv.mu.Unlock()
+		if kv.maxraftstate != -1 && kv.persister.RaftStateSize() > kv.maxraftstate /2{
+			go kv.rf.Snapshot(applyMsg.CommandIndex, kv.persist())
+		}
+
 		send(kv.commandChannel[applyMsg.CommandIndex], op)
 	}
 }
@@ -200,7 +208,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv := new(KVServer)
 	kv.me = me
 	kv.maxraftstate = maxraftstate
-
+	kv.persister = persister
 	// You may need initialization code here.
 
 	kv.applyCh = make(chan raft.ApplyMsg)
@@ -210,6 +218,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.lastClientSerial = make(map[int]int)
 	kv.commandChannel  = make(map[int]chan Op)
 
+	kv.readPersist(kv.persister.ReadSnapshot())
 	go kv.applyTicker()
 
 	// You may need initialization code here.
