@@ -13,7 +13,7 @@ type Clerk struct {
 	servers []*labrpc.ClientEnd
 	// You will have to modify this struct.
 	curLeader int
-	id int
+	id int64
 	serial int
 }
 
@@ -29,7 +29,7 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 	ck.servers = servers
 	// You'll have to add code here.
 	ck.curLeader = 0
-	ck.id = int(nrand())
+	ck.id = nrand()
 	ck.serial = 0
 	return ck
 }
@@ -46,9 +46,12 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 // arguments. and reply must be passed as a pointer.
 func (ck *Clerk) Get(key string) string {
 	// You will have to modify this function.
+	//index := ck.curLeader
+
 	args := GetArgs{
 		Key: key,
 		ClientId: ck.id,
+		Serial: ck.serial,
 	}
 	for {
 		reply := GetReply{}

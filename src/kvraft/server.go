@@ -1,6 +1,7 @@
 package kvraft
 
 import (
+	"bytes"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -28,7 +29,7 @@ type Op struct {
 	OpType string
 	Key   string
 	Value string
-	ClientId int
+	ClientId int64
 	Serial int
 
 	Rnd int64
@@ -45,7 +46,7 @@ type KVServer struct {
 
 	// Your definitions here.
 	stateMachine map[string]string
-	lastClientSerial map[int]int
+	lastClientSerial map[int64]int
 	commandChannel map[int]chan Op
 }
 
@@ -58,9 +59,10 @@ func (kv *KVServer) sendCommand(op Op) Err{
 	if _, ok := kv.commandChannel[index]; !ok {
 		kv.commandChannel[index] = make(chan Op, 1)
 	}
+	ch := kv.commandChannel[index]
 	kv.mu.Unlock()
-	res := getChannelWithTimeout(kv.commandChannel[index])
-	if !equal(op, res){
+	res := getChannelWithTimeout(ch)
+	if res.Rnd != op.Rnd{
 		return ErrWrongLeader
 	}
 	return OK
@@ -71,7 +73,8 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	op := Op{
 		OpType: "Get",
 		Key: args.Key,
-		ClientId: args.ClientId,
+		ClientId: 0,
+		Serial: 0,
 		Rnd: nrand(),
 
 	}
@@ -146,13 +149,9 @@ func getChannelWithTimeout(ch chan Op) Op {
 	select {
 	case ret := <-ch:
 		return ret
-	case <-time.After(time.Duration(400) * time.Millisecond):
+	case <-time.After(time.Duration(700) * time.Millisecond):
 		return Op{}
 	}
-}
-
-func equal(a Op, b Op) bool {
-	return a.Rnd == b.Rnd
 }
 
 func (kv *KVServer) applyTicker() {
@@ -164,27 +163,27 @@ func (kv *KVServer) applyTicker() {
 		}
 		op := applyMsg.Command.(Op)
 		kv.mu.Lock()
-		if op.OpType == "Get"{
-		} else {
-			lastSerial, exists := kv.lastClientSerial[op.ClientId]
-			if !exists || lastSerial < op.Serial{
-				if op.OpType == "Put"{
-					kv.stateMachine[op.Key] = op.Value
-				} else if op.OpType == "Append"{
-					kv.stateMachine[op.Key] += op.Value
-				}
-				kv.lastClientSerial[op.ClientId] = op.Serial
+		lastSerial, exists := kv.lastClientSerial[op.ClientId]
+		if !exists || lastSerial < op.Serial{
+			if op.OpType == "Get"{
+			} else if op.OpType == "Put"{
+				kv.stateMachine[op.Key] = op.Value
+			} else if op.OpType == "Append"{
+				kv.stateMachine[op.Key] += op.Value
 			}
+			kv.lastClientSerial[op.ClientId] = op.Serial
 		}
+	
 		if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
 			kv.commandChannel[applyMsg.CommandIndex] = make(chan Op, 1)
 		}
+		ch := kv.commandChannel[applyMsg.CommandIndex]
 		kv.mu.Unlock()
-		if kv.maxraftstate != -1 && kv.persister.RaftStateSize() > kv.maxraftstate /2{
+
+		if kv.maxraftstate == -1 || kv.persister.RaftStateSize()  > kv.maxraftstate/2 {
 			go kv.rf.Snapshot(applyMsg.CommandIndex, kv.persist())
 		}
-
-		send(kv.commandChannel[applyMsg.CommandIndex], op)
+		send(ch , op)
 	}
 }
 
@@ -215,7 +214,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 	
 	kv.stateMachine = make(map[string]string)
-	kv.lastClientSerial = make(map[int]int)
+	kv.lastClientSerial = make(map[int64]int)
 	kv.commandChannel  = make(map[int]chan Op)
 
 	kv.readPersist(kv.persister.ReadSnapshot())
@@ -224,4 +223,30 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	// You may need initialization code here.
 
 	return kv
+}
+
+//save state and snapshot to desk
+
+func (kv *KVServer) persist() []byte {
+	buffer := new(bytes.Buffer)
+	encoder := labgob.NewEncoder(buffer)
+	encoder.Encode(kv.stateMachine)
+	encoder.Encode(kv.lastClientSerial)
+	return buffer.Bytes()
+}
+
+
+//restore state and snapshot from desk
+
+func (kv *KVServer) readPersist(data []byte) {
+	if data == nil || len(data) < 1 {
+		return
+	}
+
+	buffer := bytes.NewBuffer(data)
+	decoder := labgob.NewDecoder(buffer)
+	kv.mu.Lock()
+	decoder.Decode(&kv.stateMachine)
+	decoder.Decode(&kv.lastClientSerial)
+	kv.mu.Unlock()
 }
