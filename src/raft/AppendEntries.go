@@ -25,8 +25,8 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.mu.Lock()
 		defer rf.mu.Unlock()
 	
-		DPrintf("append from leader%v to server%v, with base-1=%v lastprevlog:%v, lastprevTerm:%v logentries:%v\n",
-		args.LeaderId, rf.me, rf.lastIncludedIndex, args.PrevLogIndex, args.PrevLogTerm, len(args.LogEntries))
+		//DPrintf("append from leader%v to server%v, with base-1=%v lastprevlog:%v, lastprevTerm:%v logentries:%v\n",
+		//args.LeaderId, rf.me, rf.lastIncludedIndex, args.PrevLogIndex, args.PrevLogTerm, len(args.LogEntries))
 	
 		if args.Term > rf.currentTerm{
 			rf.ToFollower(args.Term)
@@ -90,7 +90,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			//min(leaderCommit, index of last new entry)
 			if args.LeaderCommit > rf.commitIndex{
 				rf.commitIndex = min(args.LeaderCommit, rf.getLastLogIndex())
-				DPrintf("follower %v commit index:%v\n", rf.me, rf.commitIndex)
+				//DPrintf("follower %v commit index:%v\n", rf.me, rf.commitIndex)
 				rf.Commit()
 			}
 		}
@@ -153,7 +153,7 @@ func (rf *Raft) sendAppendEntries(peer int) {
 }
 
 func (rf *Raft) HeartBeatTicker() {
-	DPrintf("%d send logs: %v", rf.me, rf.log)
+	//DPrintf("%d send logs: %v", rf.me, rf.log)
 
 	for i := 0; i < len(rf.peers); i++ {
 		if i == rf.me {

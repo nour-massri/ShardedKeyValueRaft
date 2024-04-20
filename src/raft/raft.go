@@ -254,12 +254,12 @@ func (rf *Raft) updateCommitIndex() {
 		}
 		if cnt > len(rf.peers) / 2 {
 			rf.commitIndex = n
-			DPrintf("leader %v commit index:%v", rf.me, rf.commitIndex)
+			//DPrintf("leader %v commit index:%v", rf.me, rf.commitIndex)
 			rf.Commit()
 			break;
 		}
 	}
-	DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)
+	//DPrintf("server%v commit index: %v\n", rf.me, rf.commitIndex)
 }
 
 // Commit should be called after commitIndex updated
