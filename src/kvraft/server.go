@@ -61,7 +61,12 @@ func (kv *KVServer) sendCommand(op Op) Err{
 	}
 	ch := kv.commandChannel[index]
 	kv.mu.Unlock()
-	res := getChannelWithTimeout(ch)
+	var res Op
+	select {
+	case res = <-ch:
+	case <-time.After(time.Duration(700) * time.Millisecond):
+		res =  Op{}
+	}
 	if res.Rnd != op.Rnd{
 		return ErrWrongLeader
 	}
@@ -136,24 +141,6 @@ func (kv *KVServer) killed() bool {
 	z := atomic.LoadInt32(&kv.dead)
 	return z == 1
 }
-
-func send(sendch chan Op, op Op) {
-	select {
-	case <-sendch:
-	default:
-	}
-	sendch <- op
-}
-
-func getChannelWithTimeout(ch chan Op) Op {
-	select {
-	case ret := <-ch:
-		return ret
-	case <-time.After(time.Duration(700) * time.Millisecond):
-		return Op{}
-	}
-}
-
 func (kv *KVServer) applyTicker() {
 	for !kv.killed(){
 		applyMsg := <-kv.applyCh
@@ -183,7 +170,11 @@ func (kv *KVServer) applyTicker() {
 		if kv.maxraftstate == -1 || kv.persister.RaftStateSize()  > kv.maxraftstate/2 {
 			go kv.rf.Snapshot(applyMsg.CommandIndex, kv.persist())
 		}
-		send(ch , op)
+		select {
+			case <-ch:
+			default:
+		}
+		ch <- op
 	}
 }
 
