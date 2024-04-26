@@ -169,18 +169,18 @@ func (sc *ShardCtrler) makeNewConfig(){
 func (sc *ShardCtrler) groupByGID() map[int][]int{
 	cfg  := &sc.configs[sc.configIdx]
 
-	groupShards := map[int][]int{}
-	for k, _ := range cfg.Groups {
-		groupShards[k] = []int{}
+	groupByGID := map[int][]int{}
+	for k := range cfg.Groups {
+		groupByGID[k] = []int{}
 	}
 	for k, v := range cfg.Shards {
-		groupShards[v] = append(groupShards[v], k)
+		groupByGID[v] = append(groupByGID[v], k)
 	}
-	return groupShards
+	return groupByGID
 }
 
-func (sm *ShardCtrler) getMaxGID(groupShards map[int][]int) int {
-	max := -1
+func (sm *ShardCtrler) getMaxGID(groupShards map[int][]int, isMin int) int {
+	max := - (1<<31)
 	gid := 0
 
   KeyLenPairs := make([][2]interface{}, 0)
@@ -193,48 +193,26 @@ func (sm *ShardCtrler) getMaxGID(groupShards map[int][]int) int {
 	  return KeyLenPairs[i][0].(int) < KeyLenPairs[j][0].(int)
   })
 	for _, pair  := range KeyLenPairs {
-		if max < pair[1].(int) {
-			max = pair[1].(int)
+		if max < (pair[1].(int) * isMin) {
+			max = (pair[1].(int) * isMin)
 			gid = pair[0].(int)
 		}
 	}
 	return gid
 }
 
-func (sm *ShardCtrler) getMinGID(groupShards map[int][]int) int {
-	min := 1<<31 - 1
-	gid := 0
-	KeyLenPairs := make([][2]interface{}, 0)
-
-	for key, value := range groupShards {
-	  KeyLenPairs = append(KeyLenPairs, [2]interface{}{key, len(value)})
-	}
-  
-	sort.Slice(KeyLenPairs, func(i, j int) bool {
-		return KeyLenPairs[i][0].(int) < KeyLenPairs[j][0].(int)
-	})
-	  for _, pair  := range KeyLenPairs {
-		  if min > pair[1].(int) {
-			  min = pair[1].(int)
-			  gid = pair[0].(int)
-		  }
-	  }
-	return gid
-}
 func (sc *ShardCtrler) addGID(gid int){
 	cfg  := &sc.configs[sc.configIdx]
 	groupedByGID := sc.groupByGID()
 
-	//if gid is first
 	if len(cfg.Groups) == 1{
 		for i := 0;i < NShards;i++{
 			cfg.Shards[i] = gid
 		}
 	} else {
 		iters := NShards / len(cfg.Groups)
-
 		for i := 0;i < iters;i ++{
-			GIDTotake := sc.getMaxGID(groupedByGID)
+			GIDTotake := sc.getMaxGID(groupedByGID, 1)
 			cfg.Shards[groupedByGID[GIDTotake][0]] = gid
 			groupedByGID[GIDTotake] = groupedByGID[GIDTotake][1:]
 		}
@@ -250,7 +228,7 @@ func (sc *ShardCtrler) delGID(gid int){	cfg  := &sc.configs[sc.configIdx]
 		iters := groupedByGID[gid]
 		delete(groupedByGID, gid)
 		for _, shard := range iters{
-			GIDToGive := sc.getMinGID(groupedByGID)
+			GIDToGive := sc.getMaxGID(groupedByGID, -1)
 			cfg.Shards[shard] = GIDToGive
 			groupedByGID[GIDToGive] = append(groupedByGID[GIDToGive], shard)
 			for key := range groupedByGID {
