@@ -27,47 +27,56 @@ type Config struct {
 	Shards [NShards]int     // shard -> gid
 	Groups map[int][]string // gid -> servers[]
 }
-
 const (
-	OK = "OK"
+	OK             = "OK"
+	ErrNoKey       = "ErrNoKey"
+	ErrWrongLeader = "ErrWrongLeader"
 )
 
 type Err string
 
 type JoinArgs struct {
 	Servers map[int][]string // new GID -> servers mappings
+
+	ClientId int
+	Serial int
 }
 
 type JoinReply struct {
-	WrongLeader bool
 	Err         Err
 }
 
 type LeaveArgs struct {
 	GIDs []int
+
+	ClientId int
+	Serial int
 }
 
 type LeaveReply struct {
-	WrongLeader bool
 	Err         Err
 }
 
 type MoveArgs struct {
 	Shard int
 	GID   int
+
+	ClientId int
+	Serial int
 }
 
 type MoveReply struct {
-	WrongLeader bool
 	Err         Err
 }
 
 type QueryArgs struct {
 	Num int // desired config number
+
+	ClientId int64
+	Serial int
 }
 
 type QueryReply struct {
-	WrongLeader bool
 	Err         Err
 	Config      Config
 }
