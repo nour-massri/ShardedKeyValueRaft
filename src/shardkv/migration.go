@@ -9,32 +9,33 @@ type GetShardsReply struct {
 	Err Err
 	StateMachine map[string]string
 	LastClientSerial map[int64]int
+	Shard int
+	ConfigNum int
 }
 
-func (kv *ShardKV) sendGetShards(shard int, configNum int){
-	cfg := kv.mck.Query(configNum)
-	gid := cfg.Shards[shard]
-	args := GetShardsArgs{Shard: shard, ConfigNum: configNum}
-	for _, serverName := range cfg.Groups[gid]{
-		server := kv.make_end(serverName)
-		reply := GetShardsReply{}
+// func (kv *ShardKV) sendGetShards(shard int, configNum int, cfg shardctrler.Config){
+// 	gid := cfg.Shards[shard]
+// 	args := GetShardsArgs{Shard: shard, ConfigNum: configNum}
+// 	for _, serverName := range cfg.Groups[gid]{
+// 		server := kv.make_end(serverName)
+// 		reply := GetShardsReply{}
 
-		ok := server.Call("ShardKV.GetShards", &args, &reply)
-		if ok && reply.Err == OK{
-			//fmt.Printf("got shards: %v %v", shard, configNum)
-			kv.rf.Start(
-			Op{
-				OpType: "Migration",
-				ConfigNum: configNum,
-				Shard: shard,
-			StateMachine: reply.StateMachine, 
-			LastClientSerial: reply.LastClientSerial,
-		})
-		}
-	}
-}
+// 		ok := server.Call("ShardKV.GetShards", &args, &reply)
+// 		if ok && reply.Err == OK{
+// 			//fmt.Printf("got shards: %v %v", shard, configNum)
+// 			kv.rf.Start(
+// 			Op{
+// 				OpType: "Migration",
+// 				ConfigNum: reply.ConfigNum,
+// 				Shard: reply.Shard,
+// 			StateMachine: reply.StateMachine, 
+// 			LastClientSerial: reply.LastClientSerial,
+// 		})
+// 		}
+// 	}
+// }
 
-func (kv *ShardKV) GetShards(args *GetShardsArgs, reply *GetShardsReply){
+func (kv *ShardKV) ShardMigration(args *GetShardsArgs, reply *GetShardsReply){
 	// _, isLeader := kv.rf.GetState()
 	// if !isLeader{
 	// 	reply.Err = ErrWrongLeader
@@ -51,6 +52,7 @@ func (kv *ShardKV) GetShards(args *GetShardsArgs, reply *GetShardsReply){
 	// }
 	// reply.StateMachine = v2
 
+	reply.Err, reply.Shard, reply.ConfigNum = ErrWrongLeader, args.Shard, args.ConfigNum
 	reply.Err = ErrWrongLeader
 	if _, isLeader := kv.rf.GetState(); !isLeader {
 		return
@@ -58,7 +60,7 @@ func (kv *ShardKV) GetShards(args *GetShardsArgs, reply *GetShardsReply){
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	reply.Err = ErrWrongGroup
-	if args.ConfigNum >= kv.config.Num {
+	if args.ConfigNum >= kv.config.Num {//should be a past config -> this group hasn't gotten the latest config
 		return
 	}
 	reply.Err = OK

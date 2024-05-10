@@ -70,8 +70,8 @@ func MakeClerk(ctrlers []*labrpc.ClientEnd, make_end func(string) *labrpc.Client
 func (ck *Clerk) Get(key string) string {
 	args := GetArgs{}
 	args.Key = key
-	args.ClientId = ck.id
-	args.Serial = ck.serial
+	// args.ClientId = ck.id
+	// args.Serial = ck.serial
 	for {
 		shard := key2shard(key)
 		gid := ck.config.Shards[shard]
