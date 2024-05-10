@@ -95,8 +95,6 @@ func (ck *Clerk) Get(key string) string {
 		// ask controller for the latest configuration.
 		ck.config = ck.sm.Query(-1)
 	}
-
-	return ""
 }
 
 // shared by Put and Append.
@@ -106,8 +104,8 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	args.Key = key
 	args.Value = value
 	args.Op = op
-	args.ClientId = ck.id
-	args.Serial = ck.serial
+	args.Cid = ck.id
+	args.Seq = ck.serial
 	ck.serial ++
 	for {
 		shard := key2shard(key)

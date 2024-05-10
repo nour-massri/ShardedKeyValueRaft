@@ -1,7 +1,5 @@
 package shardkv
 
-//channel and rpc sending requests, on both sides do checks
-
 import (
 	"strconv"
 	"sync"
@@ -14,82 +12,70 @@ import (
 )
 
 type Op struct {
-	// Your definitions here.
-	// Field names must start with capital letters,
-	// otherwise RPC will break.
-	OpType string //"Get", "Put", "Append", "Config", "Migration"
-
-	//for put append and get
+	Type  string
 	Key   string
 	Value string
-	ClientId int64
-	Serial int
-	Rnd int64//for get, append and put equal check
+	Cid   int64
+	Seq   int
 
-	//for change config
-	Config shardctrler.Config
-
-	//for update state
-	Shard int
-	ConfigNum int
-	StateMachine map[string]string
-	LastClientSerial map[int64]int
-
-	//return values of op executions
-	Err Err
-	Ret string
-
-
+	Rnd int64
 }
 
 type ShardKV struct {
-	mu           sync.Mutex
-	me           int
-	rf           *raft.Raft
-	applyCh      chan raft.ApplyMsg
+	mu      sync.Mutex
+	me      int
+	rf      *raft.Raft
+	applyCh chan raft.ApplyMsg
+
 	make_end     func(string) *labrpc.ClientEnd
 	gid          int
-	ctrlers      []*labrpc.ClientEnd
+	masters      []*labrpc.ClientEnd
 	maxraftstate int // snapshot if log grows this big
 
 	// Your definitions here.
-
-	stateMachine map[string]string
-	lastClientSerial map[int64]int
-	commandChannel map[int]chan Op
-
-	shardsToPull map[int]int
-	shardsToServe map[int]bool
-	//to save state at specific configNum time
-	stateMachineToPush map[int]map[int]map[string]string
-
-	garbages     map[int]map[int]bool              
-
-
-	config   shardctrler.Config
-	ck *shardctrler.Clerk
+	mck       *shardctrler.Clerk
+	cfg       shardctrler.Config
 	persister *raft.Persister
+	db        map[string]string
+	notify    map[int]chan Op
+	cid2seq   map[int64]int
+
+	toOutShards  map[int]map[int]map[string]string "cfg number -> (shard -> db)"
+	comeInShards map[int]int                       "shard -> config number"
+	shards       map[int]bool                      "record which i-shard can offer service"
+	garbages     map[int]map[int]bool              "cfg number -> shards"
 
 	killCh chan bool
 }
 
 func equalOp(a Op, b Op) bool {
-	return a.OpType == b.OpType && a.Key == b.Key && a.ClientId == b.ClientId && a.Serial == b.Serial
+	return a.Type == b.Type && a.Key == b.Key && a.Cid == b.Cid && a.Seq == b.Seq
 }
-// func (kv *ShardKV) sendCommand(command Op) (Err, string) {
-// 	index, _, isLeader := kv.rf.Start(command)
-// 	if isLeader {
-// 		ch := kv.put(index, true)
-// 		op := kv.notified(ch, index)
-// 		if equalOp(command, op) {
-// 			return OK, op.Value
-// 		}
-// 		if op.OpType == ErrWrongGroup {
-// 			return ErrWrongGroup, ""
-// 		}
-// 	}
-// 	return ErrWrongLeader, ""
-// }
+
+func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
+	command := Op{"Get", args.Key, "", nrand(), 0, nrand()}
+	reply.Err, reply.Value = kv.handle(command)
+}
+
+func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
+	command := Op{args.Op, args.Key, args.Value, args.Cid, args.Seq, nrand()}
+	reply.Err, _ = kv.handle(command)
+}
+
+func (kv *ShardKV) handle(command Op) (Err, string) {
+	index, _, isLeader := kv.rf.Start(command)
+	if isLeader {
+		ch := kv.put(index, true)
+		op := kv.notified(ch, index)
+		if op.Type == command.Type && op.Rnd == command.Rnd {
+			return OK, op.Value
+		}
+		if op.Type == ErrWrongGroup {
+			return ErrWrongGroup, ""
+		}
+	}
+	return ErrWrongLeader, ""
+}
 
 func send(notifyCh chan Op, op Op) {
 	select {
@@ -106,7 +92,7 @@ func (kv *ShardKV) notified(ch chan Op, index int) Op {
 			close(ch)
 		}
 		kv.mu.Lock()
-		delete(kv.commandChannel, index)
+		delete(kv.notify, index)
 		kv.mu.Unlock()
 		return notifyArg
 	case <-time.After(time.Duration(1000) * time.Millisecond):
@@ -114,94 +100,22 @@ func (kv *ShardKV) notified(ch chan Op, index int) Op {
 	}
 }
 
+
+
 func (kv *ShardKV) put(idx int, createIfNotExists bool) chan Op {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	if _, ok := kv.commandChannel[idx]; !ok {
+	if _, ok := kv.notify[idx]; !ok {
 		if !createIfNotExists {
 			return nil
 		}
-		kv.commandChannel[idx] = make(chan Op, 1)
+		kv.notify[idx] = make(chan Op, 1)
 	}
-	return kv.commandChannel[idx]
+	return kv.notify[idx]
 }
 
-func (kv *ShardKV) sendCommand(op Op) (Err, string){
-	index, _, isLeader := kv.rf.Start(op)
-	if !isLeader{
-		return ErrWrongLeader, ""
-	}
-	kv.mu.Lock()
-	if _, ok := kv.commandChannel[index]; !ok {
-		kv.commandChannel[index] = make(chan Op, 1)
-	}
-	ch := kv.commandChannel[index]
-	kv.mu.Unlock()
-	var res Op
-	var ok bool
-	select {
-	case res, ok = <-ch:	
-		if ok{
-			close(ch)
-		}
-		kv.mu.Lock()
-		delete(kv.commandChannel,index)
-		kv.mu.Unlock()
-	case <-time.After(time.Duration(1000) * time.Millisecond):
-		res =  Op{}
-	}
-	if equalOp(res, op) {
-		return OK, res.Value
-	}
-	if res.OpType == ErrWrongGroup {
-		return ErrWrongGroup, ""
-	}
-	// //get another op type having err and rnd 
-	// if res.Err == OK && res.Rnd == op.Rnd{
-	// 	return  OK, res.Ret
-	// }
-	// if res.Err != OK{
-	// 	return res.Err, res.Ret
-	// }
-	return ErrWrongLeader, ""//if res.rnd != op.rend means 
-	//the leader changed between sending the op at index and commiting op at index 
-	//rnd not equal means the other leader committed a different op at index
-}
-
-func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
-	// Your code here.
-	op := Op{
-		OpType: "Get",
-		Key: args.Key,
-		ClientId: nrand(),
-		Serial: 0,
-		Rnd: nrand(),
-
-	}
-	reply.Err, reply.Value = kv.sendCommand(op)
-}
-
-func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
-	// Your code here.
-	op := Op{
-		OpType: args.Op,
-		Key: args.Key,
-		Value: args.Value,
-		ClientId: args.ClientId,
-		Serial: args.Serial,
-		Rnd: nrand(),
-	}
-	reply.Err, _ = kv.sendCommand(op)
-	
-}
-
-// the tester calls Kill() when a ShardKV instance won't
-// be needed again. you are not required to do anything
-// in Kill(), but it might be convenient to (for example)
-// turn off debug output from this instance.
 func (kv *ShardKV) Kill() {
 	kv.rf.Kill()
-	// Your code here, if desired.
 	select {
 	case <-kv.killCh:
 	default:
@@ -209,151 +123,65 @@ func (kv *ShardKV) Kill() {
 	kv.killCh <- true
 }
 
-func (kv *ShardKV) updateInAndOutDataShard(cfg shardctrler.Config) {
+func (kv *ShardKV) tryPollNewCfg() {
+	_, isLeader := kv.rf.GetState()
 	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if cfg.Num <= kv.config.Num { //only consider newer config
+	if !isLeader || len(kv.comeInShards) > 0 {
+		kv.mu.Unlock()
 		return
 	}
-
-	oldCfg, toOutShard := kv.config, kv.shardsToServe
-	kv.shardsToServe, kv.config = make(map[int]bool), cfg
-	for shard, gid := range cfg.Shards {
-		if gid != kv.gid {
-			continue
-		}
-		if _, ok := toOutShard[shard]; ok || oldCfg.Num == 0 {
-			kv.shardsToServe[shard] = true
-			delete(toOutShard, shard)
-		} else {
-			kv.shardsToPull[shard] = oldCfg.Num
-		}
+	next := kv.cfg.Num + 1
+	kv.mu.Unlock()
+	cfg := kv.mck.Query(next)
+	if cfg.Num == next {
+		kv.rf.Start(cfg) //sync follower with new cfg
 	}
-	if len(toOutShard) > 0 { // prepare data that needed migration
-		kv.stateMachineToPush[oldCfg.Num] = make(map[int]map[string]string)
-		for shard := range toOutShard {
-			outDb := make(map[string]string)
-			for k, v := range kv.stateMachine {
-				if key2shard(k) == shard {
-					outDb[k] = v
-					delete(kv.stateMachine, k)
+}
+
+func (kv *ShardKV) tryGC() {
+	_, isLeader := kv.rf.GetState()
+	kv.mu.Lock()
+	if !isLeader || len(kv.garbages) == 0 {
+		kv.mu.Unlock()
+		return
+	}
+	var wait sync.WaitGroup
+	for cfgNum, shards := range kv.garbages {
+		for shard := range shards {
+			wait.Add(1)
+			go func(shard int, cfg shardctrler.Config) {
+				defer wait.Done()
+				args := GetShardsArgs{shard, cfg.Num}
+				gid := cfg.Shards[shard]
+				for _, server := range cfg.Groups[gid] {
+					srv := kv.make_end(server)
+					reply := GetShardsReply{}
+					if ok := srv.Call("ShardKV.GarbageCollection", &args, &reply); ok && reply.Err == OK {
+						kv.mu.Lock()
+						delete(kv.garbages[cfgNum], shard)
+						if len(kv.garbages[cfgNum]) == 0 {
+							delete(kv.garbages, cfgNum)
+						}
+						kv.mu.Unlock()
+					}
 				}
-			}
-			kv.stateMachineToPush[oldCfg.Num][shard] = outDb
-		}
-	}
-}
-
-func (kv *ShardKV) applyMigrationOp(op Op){
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if op.ConfigNum != kv.config.Num-1 {
-		return
-	}
-	delete(kv.shardsToPull, op.Shard)
-	if _, ok := kv.shardsToServe[op.Shard]; ok {
-		return 
-	}	
-	kv.shardsToServe[op.Shard] = true
-	for k,v := range(op.LastClientSerial){
-		if v > kv.lastClientSerial[k]{
-			kv.lastClientSerial[k] = v
-		}
-	}
-	for k,v := range(op.StateMachine){
-		kv.stateMachine[k] = v
-	}
-	if _, ok := kv.garbages[op.ConfigNum]; !ok {
-		kv.garbages[op.ConfigNum] = make(map[int]bool)
-	}
-	kv.garbages[op.ConfigNum][op.Shard] = true
-}
-
-func (kv *ShardKV) applyClientOp(index int, op *Op){
-	//normal operations apply
-	kv.mu.Lock()
-	if _,ok := kv.shardsToServe[key2shard(op.Key)]; !ok{
-		op.Err = ErrWrongGroup
-		op.OpType = ErrWrongGroup
-	} else {
-		op.Err = OK
-		lastSerial, exists := kv.lastClientSerial[op.ClientId]
-		if !exists || lastSerial < op.Serial{
-			if op.OpType == "Put"{
-				kv.stateMachine[op.Key] = op.Value
-			} else if op.OpType == "Append"{
-				kv.stateMachine[op.Key] += op.Value
-			}
-			kv.lastClientSerial[op.ClientId] = op.Serial
-		}
-		if op.OpType == "Get"{
-			op.Value = kv.stateMachine[op.Key]
+			}(shard, kv.mck.Query(cfgNum))
 		}
 	}
 	kv.mu.Unlock()
-
+	wait.Wait()
 }
 
-func (kv *ShardKV) applyTicker() {
-	for {
-		select {
-		case <- kv.killCh:
-			return 
-		case applyMsg := <-kv.applyCh:
-			if applyMsg.SnapshotValid{
-				kv.readPersist(applyMsg.Snapshot)
-				continue
-			}
-			op := applyMsg.Command.(Op)
-			if op.OpType == "Config"{
-				//kv.applyConfigOp(op)
-				kv.updateInAndOutDataShard(op.Config)
-			} else if(op.OpType == "Migration"){
-				kv.applyMigrationOp(op)
-			} else{
-				if op.OpType == "GC"{
-					cfgNum, _ := strconv.Atoi(op.Key)
-					kv.gc(applyMsg.CommandIndex, op, cfgNum, op.Serial)
-				} else {
-					kv.applyClientOp(applyMsg.CommandIndex, &op)
-				}
-				if notifyCh := kv.put(applyMsg.CommandIndex, false); notifyCh != nil {
-					send(notifyCh, op)
-				}
-			}
-			kv.checkSnapshot(applyMsg.CommandIndex)
-		}
-	}
-}
-
-func (kv *ShardKV) pullConfig() {
-	for {
-		_, isLeader := kv.rf.GetState()
-		kv.mu.Lock()
-		if !isLeader || len(kv.shardsToPull) > 0{
-			kv.mu.Unlock()
-			time.Sleep(50*time.Millisecond)
-			continue
-		}
-		nxt := kv.config.Num + 1
-		kv.mu.Unlock()
-		newConfig := kv.ck.Query(nxt)
-		if newConfig.Num == nxt{
-		kv.rf.Start(Op{OpType:"Config", Config: newConfig})
-		}
-		time.Sleep(50*time.Millisecond)
-	}
-}
-func (kv *ShardKV) pullShards() {
+func (kv *ShardKV) tryPullShard() {
 	_, isLeader := kv.rf.GetState()
 	kv.mu.Lock()
-	if !isLeader || len(kv.shardsToPull) == 0 {
+	if !isLeader || len(kv.comeInShards) == 0 {
 		kv.mu.Unlock()
 		return
 	}
 
 	var wait sync.WaitGroup
-	for shard, idx := range kv.shardsToPull {
+	for shard, idx := range kv.comeInShards {
 		wait.Add(1)
 		go func(shard int, cfg shardctrler.Config) {
 			defer wait.Done()
@@ -363,65 +191,16 @@ func (kv *ShardKV) pullShards() {
 				srv := kv.make_end(server)
 				reply := GetShardsReply{}
 				if ok := srv.Call("ShardKV.ShardMigration", &args, &reply); ok && reply.Err == OK {
-					kv.rf.Start(
-						Op{
-							OpType:"Migration",
-							ConfigNum: reply.ConfigNum,
-							Shard: reply.Shard,
-							StateMachine: reply.StateMachine,
-							LastClientSerial: reply.LastClientSerial,
-						})
+					kv.rf.Start(reply)
 				}
+
 			}
-		}(shard, kv.ck.Query(idx))
+		}(shard, kv.mck.Query(idx))
 	}
 	kv.mu.Unlock()
 	wait.Wait()
 }
 
-func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister, maxraftstate int, gid int, ctrlers []*labrpc.ClientEnd, make_end func(string) *labrpc.ClientEnd) *ShardKV {
-	// call labgob.Register on structures you want
-	// Go's RPC library to marshall/unmarshall.
-	labgob.Register(Op{})
-
-	kv := new(ShardKV)
-	kv.me = me
-	kv.maxraftstate = maxraftstate
-	kv.make_end = make_end
-	kv.gid = gid
-	kv.ctrlers = ctrlers
-
-	// Your initialization code here.
-	kv.persister = persister
-	kv.stateMachine = make(map[string]string)
-	kv.lastClientSerial = make(map[int64]int)
-	kv.commandChannel  = make(map[int]chan Op)
-
-	// Use something like this to talk to the shardctrler:
-	kv.ck = shardctrler.MakeClerk(kv.ctrlers)
-	//from this you can tell that the controlers replica group is an indepdent group
-	//and the shardedkv are clients(make clerk) to this controlers group
-	kv.config = shardctrler.Config{}
-	kv.shardsToPull = make(map[int]int)
-	kv.shardsToServe = make(map[int]bool)
-	kv.stateMachineToPush = make(map[int]map[int]map[string]string)
-
-	kv.garbages = make(map[int]map[int]bool)
-	kv.readPersist(kv.persister.ReadSnapshot())
-
-	kv.applyCh = make(chan raft.ApplyMsg)
-	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
-	kv.killCh = make(chan bool, 1)
-
-
-	go kv.pullConfig()
-	go kv.daemon(kv.pullShards,80)
-	go kv.daemon(kv.tryGC, 100)
-
-	go kv.applyTicker()
-
-	return kv
-}
 func (kv *ShardKV) daemon(do func(), sleepMS int) {
 	for {
 		select {
@@ -431,5 +210,165 @@ func (kv *ShardKV) daemon(do func(), sleepMS int) {
 			do()
 		}
 		time.Sleep(time.Duration(sleepMS) * time.Millisecond)
+	}
+}
+
+func (kv *ShardKV) apply(applyMsg raft.ApplyMsg) {
+	if cfg, ok := applyMsg.Command.(shardctrler.Config); ok {
+		kv.updateInAndOutDataShard(cfg)
+	} else if migrationData, ok := applyMsg.Command.(GetShardsReply); ok {
+		kv.updateDBWithMigrateData(migrationData)
+	} else {
+		op := applyMsg.Command.(Op)
+		if op.Type == "GC" {
+			cfgNum, _ := strconv.Atoi(op.Key)
+			kv.gc(cfgNum, op.Seq)
+		} else {
+			kv.normal(&op)
+		}
+		if notifyCh := kv.put(applyMsg.CommandIndex, false); notifyCh != nil {
+			send(notifyCh, op)
+		}
+	}
+	kv.checkSnapshot(applyMsg.CommandIndex)
+}
+
+func (kv *ShardKV) updateInAndOutDataShard(cfg shardctrler.Config) {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	if cfg.Num <= kv.cfg.Num { //only consider newer config
+		return
+	}
+
+	oldCfg, toOutShard := kv.cfg, kv.shards
+	kv.shards, kv.cfg = make(map[int]bool), cfg
+	for shard, gid := range cfg.Shards {
+		if gid != kv.gid {
+			continue
+		}
+		if _, ok := toOutShard[shard]; ok || oldCfg.Num == 0 {
+			kv.shards[shard] = true
+			delete(toOutShard, shard)
+		} else {
+			kv.comeInShards[shard] = oldCfg.Num
+		}
+	}
+	if len(toOutShard) > 0 { // prepare data that needed migration
+		kv.toOutShards[oldCfg.Num] = make(map[int]map[string]string)
+		for shard := range toOutShard {
+			outDb := make(map[string]string)
+			for k, v := range kv.db {
+				if key2shard(k) == shard {
+					outDb[k] = v
+					delete(kv.db, k)
+				}
+			}
+			kv.toOutShards[oldCfg.Num][shard] = outDb
+		}
+	}
+}
+
+func (kv *ShardKV) updateDBWithMigrateData(migrationData GetShardsReply) {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	if migrationData.ConfigNum != kv.cfg.Num-1 {
+		return
+	}
+
+	delete(kv.comeInShards, migrationData.Shard)
+	//this check is necessary, to avoid use  kv.cfg.Num-1 to update kv.cfg.Num's shard
+	if _, ok := kv.shards[migrationData.Shard]; !ok {
+		kv.shards[migrationData.Shard] = true
+		for k, v := range migrationData.DB {
+			kv.db[k] = v
+		}
+		for k, v := range migrationData.Cid2Seq {
+			kv.cid2seq[k] = max(v, kv.cid2seq[k])
+		}
+		if _, ok := kv.garbages[migrationData.ConfigNum]; !ok {
+			kv.garbages[migrationData.ConfigNum] = make(map[int]bool)
+		}
+		kv.garbages[migrationData.ConfigNum][migrationData.Shard] = true
+	}
+}
+
+func (kv *ShardKV) normal(op *Op) {
+	shard := key2shard(op.Key)
+	kv.mu.Lock()
+	if _, ok := kv.shards[shard]; !ok {
+		op.Type = ErrWrongGroup
+	} else {
+		maxSeq, found := kv.cid2seq[op.Cid]
+		if !found || op.Seq > maxSeq {
+			if op.Type == "Put" {
+				kv.db[op.Key] = op.Value
+			} else if op.Type == "Append" {
+				kv.db[op.Key] += op.Value
+			}
+			kv.cid2seq[op.Cid] = op.Seq
+		}
+		if op.Type == "Get" {
+			op.Value = kv.db[op.Key]
+		}
+	}
+	kv.mu.Unlock()
+}
+
+func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister, maxraftstate int, gid int, masters []*labrpc.ClientEnd, make_end func(string) *labrpc.ClientEnd) *ShardKV {
+	// call labgob.Register on structures you want
+	// Go's RPC library to marshall/unmarshall.
+	labgob.Register(Op{})
+	labgob.Register(GetShardsArgs{})
+	labgob.Register(GetShardsReply{})
+	labgob.Register(shardctrler.Config{})
+
+	kv := new(ShardKV)
+	kv.me = me
+	kv.maxraftstate = maxraftstate
+	kv.make_end = make_end
+	kv.gid = gid
+	kv.masters = masters
+
+	// Your initialization code here.
+	kv.persister = persister
+
+	// Use something like this to talk to the shardmaster:
+	kv.mck = shardctrler.MakeClerk(kv.masters)
+	kv.cfg = shardctrler.Config{}
+
+	kv.db = make(map[string]string)
+	kv.notify = make(map[int]chan Op)
+	kv.cid2seq = make(map[int64]int)
+
+	kv.toOutShards = make(map[int]map[int]map[string]string)
+	kv.comeInShards = make(map[int]int)
+	kv.shards = make(map[int]bool)
+	kv.garbages = make(map[int]map[int]bool)
+
+	kv.readPersist(kv.persister.ReadSnapshot())
+
+	kv.applyCh = make(chan raft.ApplyMsg)
+	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
+	kv.killCh = make(chan bool, 1)
+	go kv.daemon(kv.tryPollNewCfg, 50)
+	go kv.daemon(kv.tryPullShard, 80)
+	go kv.daemon(kv.tryGC, 100)
+
+	go kv.applyDaemon()
+	return kv
+}
+
+func (kv *ShardKV) applyDaemon() {
+	for {
+		select {
+		case <-kv.killCh:
+			return
+		case applyMsg := <-kv.applyCh:
+			if !applyMsg.CommandValid {
+				kv.readPersist(applyMsg.Snapshot)
+				continue
+			}
+			kv.apply(applyMsg)
+		}
 	}
 }
