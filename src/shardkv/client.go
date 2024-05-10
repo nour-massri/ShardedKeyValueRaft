@@ -104,8 +104,8 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	args.Key = key
 	args.Value = value
 	args.Op = op
-	args.Cid = ck.id
-	args.Seq = ck.serial
+	args.ClientId = ck.id
+	args.Serial = ck.serial
 	ck.serial ++
 	for {
 		shard := key2shard(key)

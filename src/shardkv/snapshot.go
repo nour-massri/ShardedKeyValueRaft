@@ -8,7 +8,6 @@ import (
 	"6.5840/shardctrler"
 )
 
-// 检测Raft日志大小
 func (kv *ShardKV) checkSnapshot(index int) {
 	if kv.maxraftstate == -1 {
 		return
@@ -19,23 +18,21 @@ func (kv *ShardKV) checkSnapshot(index int) {
 	}
 }
 
-// 快照数据编码
 func (kv *ShardKV) persist() []byte {
 	w := new(bytes.Buffer)
 	e := labgob.NewEncoder(w)
 	kv.mu.Lock()
-	e.Encode(kv.db)
-	e.Encode(kv.cid2seq)
-	e.Encode(kv.comeInShards)
-	e.Encode(kv.toOutShards)
-	e.Encode(kv.shards)
-	e.Encode(kv.cfg)
+	e.Encode(kv.stateMachine)
+	e.Encode(kv.lastClientSerial)
+	e.Encode(kv.shardsToPull)
+	e.Encode(kv.shardsToPush)
+	e.Encode(kv.shardsToServe)
+	e.Encode(kv.config)
 	e.Encode(kv.garbages)
 	kv.mu.Unlock()
 	return w.Bytes()
 }
 
-// 快照数据解码
 func (kv *ShardKV) readPersist(snapshot []byte) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
@@ -56,7 +53,7 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 		d.Decode(&garbages) != nil {
 		fmt.Errorf("[decodeSnapshot]: Decode Error!\n")
 	} else {
-		kv.db, kv.cid2seq, kv.cfg = db, cid2Seq, cfg
-		kv.toOutShards, kv.comeInShards, kv.shards, kv.garbages = toOutShards, comeInShards, myShards, garbages
+		kv.stateMachine, kv.lastClientSerial, kv.config = db, cid2Seq, cfg
+		kv.shardsToPush, kv.shardsToPull, kv.shardsToServe, kv.garbages = toOutShards, comeInShards, myShards, garbages
 	}
 }
