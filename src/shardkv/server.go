@@ -76,6 +76,56 @@ type ShardKV struct {
 func equalOp(a Op, b Op) bool {
 	return a.OpType == b.OpType && a.Key == b.Key && a.ClientId == b.ClientId && a.Serial == b.Serial
 }
+// func (kv *ShardKV) sendCommand(command Op) (Err, string) {
+// 	index, _, isLeader := kv.rf.Start(command)
+// 	if isLeader {
+// 		ch := kv.put(index, true)
+// 		op := kv.notified(ch, index)
+// 		if equalOp(command, op) {
+// 			return OK, op.Value
+// 		}
+// 		if op.OpType == ErrWrongGroup {
+// 			return ErrWrongGroup, ""
+// 		}
+// 	}
+// 	return ErrWrongLeader, ""
+// }
+
+func send(notifyCh chan Op, op Op) {
+	select {
+	case <-notifyCh:
+	default:
+	}
+	notifyCh <- op
+}
+
+func (kv *ShardKV) notified(ch chan Op, index int) Op {
+	select {
+	case notifyArg, ok := <-ch:
+		if ok {
+			close(ch)
+		}
+		kv.mu.Lock()
+		delete(kv.commandChannel, index)
+		kv.mu.Unlock()
+		return notifyArg
+	case <-time.After(time.Duration(1000) * time.Millisecond):
+		return Op{}
+	}
+}
+
+func (kv *ShardKV) put(idx int, createIfNotExists bool) chan Op {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	if _, ok := kv.commandChannel[idx]; !ok {
+		if !createIfNotExists {
+			return nil
+		}
+		kv.commandChannel[idx] = make(chan Op, 1)
+	}
+	return kv.commandChannel[idx]
+}
+
 func (kv *ShardKV) sendCommand(op Op) (Err, string){
 	index, _, isLeader := kv.rf.Start(op)
 	if !isLeader{
@@ -101,7 +151,7 @@ func (kv *ShardKV) sendCommand(op Op) (Err, string){
 		res =  Op{}
 	}
 	if equalOp(res, op) {
-		return OK, res.Ret
+		return OK, res.Value
 	}
 	if res.OpType == ErrWrongGroup {
 		return ErrWrongGroup, ""
@@ -237,7 +287,7 @@ func (kv *ShardKV) applyClientOp(index int, op *Op){
 			kv.lastClientSerial[op.ClientId] = op.Serial
 		}
 		if op.OpType == "Get"{
-			op.Ret = kv.stateMachine[op.Key]
+			op.Value = kv.stateMachine[op.Key]
 		}
 	}
 	kv.mu.Unlock()
@@ -267,22 +317,9 @@ func (kv *ShardKV) applyTicker() {
 				} else {
 					kv.applyClientOp(applyMsg.CommandIndex, &op)
 				}
-				kv.mu.Lock()
-				var ch chan Op
-				if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
-					ch = nil
-				}else {
-					ch = kv.commandChannel[applyMsg.CommandIndex]
+				if notifyCh := kv.put(applyMsg.CommandIndex, false); notifyCh != nil {
+					send(notifyCh, op)
 				}
-				kv.mu.Unlock()
-				if ch == nil{
-					return 
-				}
-				select {
-					case <-ch:
-					default:
-				}
-				ch <- op
 			}
 			kv.checkSnapshot(applyMsg.CommandIndex)
 		}
