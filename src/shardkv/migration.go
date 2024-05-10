@@ -53,7 +53,7 @@ func (kv *ShardKV) ShardMigration(args *GetShardsArgs, reply *GetShardsReply){
 	// reply.StateMachine = v2
 
 	reply.Err, reply.Shard, reply.ConfigNum = ErrWrongLeader, args.Shard, args.ConfigNum
-	reply.Err = ErrWrongLeader
+	//reply.Err = ErrWrongLeader
 	if _, isLeader := kv.rf.GetState(); !isLeader {
 		return
 	}
@@ -63,7 +63,8 @@ func (kv *ShardKV) ShardMigration(args *GetShardsArgs, reply *GetShardsReply){
 	if args.ConfigNum >= kv.config.Num {//should be a past config -> this group hasn't gotten the latest config
 		return
 	}
-	reply.Err = OK
+	//reply.Err = OK
+	reply.Err, reply.ConfigNum, reply.Shard = OK, args.ConfigNum, args.Shard
 	reply.StateMachine, reply.LastClientSerial = kv.copyDBAndDedupMap(args.ConfigNum, args.Shard)
 }		
 func (kv *ShardKV) copyDBAndDedupMap(config int, shard int) (map[string]string, map[int64]int) {

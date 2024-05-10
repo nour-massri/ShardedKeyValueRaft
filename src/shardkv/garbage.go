@@ -62,21 +62,13 @@ func (kv *ShardKV) tryGC() {
 
 func (kv *ShardKV) gc(index int, op Op, cfgNum int, shard int) {
 	kv.mu.Lock()
+	op.Err = OK
 	if _, ok := kv.stateMachineToPush[cfgNum]; ok {
 		delete(kv.stateMachineToPush[cfgNum], shard)
 		if len(kv.stateMachineToPush[cfgNum]) == 0 {
 			delete(kv.stateMachineToPush, cfgNum)
 		}
 	}
-	if _, ok := kv.commandChannel[index]; !ok {
-		kv.commandChannel[index] = make(chan Op, 1)
-	}
-	ch := kv.commandChannel[index]
 	kv.mu.Unlock()
 
-	select {
-		case <-ch:
-		default:
-	}
-	ch <- op
 }

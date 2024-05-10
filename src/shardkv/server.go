@@ -63,7 +63,7 @@ type ShardKV struct {
 	//to save state at specific configNum time
 	stateMachineToPush map[int]map[int]map[string]string
 
-	garbages     map[int]map[int]bool              "cfg number -> shards"
+	garbages     map[int]map[int]bool              
 
 
 	config   shardctrler.Config
@@ -73,6 +73,9 @@ type ShardKV struct {
 	killCh chan bool
 }
 
+func equalOp(a Op, b Op) bool {
+	return a.OpType == b.OpType && a.Key == b.Key && a.ClientId == b.ClientId && a.Serial == b.Serial
+}
 func (kv *ShardKV) sendCommand(op Op) (Err, string){
 	index, _, isLeader := kv.rf.Start(op)
 	if !isLeader{
@@ -97,13 +100,19 @@ func (kv *ShardKV) sendCommand(op Op) (Err, string){
 	case <-time.After(time.Duration(1000) * time.Millisecond):
 		res =  Op{}
 	}
-	//get another op type having err and rnd 
-	if res.Err == OK && res.Rnd == op.Rnd{
-		return  OK, res.Ret
+	if equalOp(res, op) {
+		return OK, res.Ret
 	}
-	if res.Err != OK{
-		return res.Err, res.Ret
+	if res.OpType == ErrWrongGroup {
+		return ErrWrongGroup, ""
 	}
+	// //get another op type having err and rnd 
+	// if res.Err == OK && res.Rnd == op.Rnd{
+	// 	return  OK, res.Ret
+	// }
+	// if res.Err != OK{
+	// 	return res.Err, res.Ret
+	// }
 	return ErrWrongLeader, ""//if res.rnd != op.rend means 
 	//the leader changed between sending the op at index and commiting op at index 
 	//rnd not equal means the other leader committed a different op at index
@@ -149,32 +158,6 @@ func (kv *ShardKV) Kill() {
 	}
 	kv.killCh <- true
 }
-
-// func (kv *ShardKV) applyConfigOp(op Op) {
-// 	kv.mu.Lock()
-// 	defer kv.mu.Unlock()
-
-// 	newCfg := op.Config
-// 	//fmt.Printf("%v %v\n", newCfg.Num, newCfg.Shards)
-// 	//update config and shardsToPull in server state and make a slice of 
-// 	for shard, newGID := range(newCfg.Shards){
-// 		oldGID := kv.config.Shards[shard]
-// 		if oldGID == newGID{
-// 			continue
-// 		}
-// 		if newGID == kv.gid{
-// 			//shardToPull
-// 			kv.shardsToPull[shard] = kv.config.Num //afterbeing pulled shardsToServe[shard] = true
-// 		}
-// 		if oldGID == kv.gid{
-// 			//shardToPush
-// 			kv.shardsToServe[shard] = false
-// 			//prepare output in kv.statemachinetopush
-// 		}
-// 	}
-// 	kv.config = op.Config
-
-// }
 
 func (kv *ShardKV) updateInAndOutDataShard(cfg shardctrler.Config) {
 	kv.mu.Lock()
@@ -223,8 +206,7 @@ func (kv *ShardKV) applyMigrationOp(op Op){
 	}	
 	kv.shardsToServe[op.Shard] = true
 	for k,v := range(op.LastClientSerial){
-		oldVal, ok := kv.lastClientSerial[k] 
-		if !ok || oldVal < v{
+		if v > kv.lastClientSerial[k]{
 			kv.lastClientSerial[k] = v
 		}
 	}
@@ -237,11 +219,12 @@ func (kv *ShardKV) applyMigrationOp(op Op){
 	kv.garbages[op.ConfigNum][op.Shard] = true
 }
 
-func (kv *ShardKV) applyClientOp(index int, op Op){
+func (kv *ShardKV) applyClientOp(index int, op *Op){
 	//normal operations apply
 	kv.mu.Lock()
 	if _,ok := kv.shardsToServe[key2shard(op.Key)]; !ok{
 		op.Err = ErrWrongGroup
+		op.OpType = ErrWrongGroup
 	} else {
 		op.Err = OK
 		lastSerial, exists := kv.lastClientSerial[op.ClientId]
@@ -257,41 +240,52 @@ func (kv *ShardKV) applyClientOp(index int, op Op){
 			op.Ret = kv.stateMachine[op.Key]
 		}
 	}
-	if _, ok := kv.commandChannel[index]; !ok {
-		kv.commandChannel[index] = make(chan Op, 1)
-	}
-	ch := kv.commandChannel[index]
 	kv.mu.Unlock()
 
-	select {
-		case <-ch:
-		default:
-	}
-	ch <- op
 }
 
 func (kv *ShardKV) applyTicker() {
 	for {
-		
-		applyMsg := <-kv.applyCh
-		if applyMsg.SnapshotValid{
-			kv.readPersist(applyMsg.Snapshot)
-			continue
+		select {
+		case <- kv.killCh:
+			return 
+		case applyMsg := <-kv.applyCh:
+			if applyMsg.SnapshotValid{
+				kv.readPersist(applyMsg.Snapshot)
+				continue
+			}
+			op := applyMsg.Command.(Op)
+			if op.OpType == "Config"{
+				//kv.applyConfigOp(op)
+				kv.updateInAndOutDataShard(op.Config)
+			} else if(op.OpType == "Migration"){
+				kv.applyMigrationOp(op)
+			} else{
+				if op.OpType == "GC"{
+					cfgNum, _ := strconv.Atoi(op.Key)
+					kv.gc(applyMsg.CommandIndex, op, cfgNum, op.Serial)
+				} else {
+					kv.applyClientOp(applyMsg.CommandIndex, &op)
+				}
+				kv.mu.Lock()
+				var ch chan Op
+				if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
+					ch = nil
+				}else {
+					ch = kv.commandChannel[applyMsg.CommandIndex]
+				}
+				kv.mu.Unlock()
+				if ch == nil{
+					return 
+				}
+				select {
+					case <-ch:
+					default:
+				}
+				ch <- op
+			}
+			kv.checkSnapshot(applyMsg.CommandIndex)
 		}
-		op := applyMsg.Command.(Op)
-		if op.OpType == "Config"{
-			//kv.applyConfigOp(op)
-			kv.updateInAndOutDataShard(op.Config)
-		} else if(op.OpType == "Migration"){
-			kv.applyMigrationOp(op)
-		} else if op.OpType == "GC"{
-			cfgNum, _ := strconv.Atoi(op.Key)
-			kv.gc(applyMsg.CommandIndex, op, cfgNum, op.Serial)
-		} else {
-			kv.applyClientOp(applyMsg.CommandIndex, op)
-
-		}
-		kv.checkSnapshot(applyMsg.CommandIndex)
 	}
 }
 
@@ -347,55 +341,7 @@ func (kv *ShardKV) pullShards() {
 	kv.mu.Unlock()
 	wait.Wait()
 }
-// func (kv *ShardKV) pullShards() {
-// 	for {
-// 		_, isLeader := kv.rf.GetState()
-// 		kv.mu.Lock()
-// 		if !isLeader || len(kv.shardsToPull) == 0{		
-// 			kv.mu.Unlock()
-// 			time.Sleep(100*time.Millisecond)
-// 			continue
-// 		}
-// 		var wait sync.WaitGroup
-// 		for shard, configNum := range(kv.shardsToPull){
-// 			//fmt.Printf("%v %v\n", shard,configNum)
-// 			wait.Add(1)
-// 			go func(shard int, configNum int, cfg shardctrler.Config){
-// 				defer wait.Done()
-// 				kv.sendGetShards(shard, configNum, cfg)
-// 			}(shard, configNum, kv.ck.Query(configNum))
-// 		}
-// 		kv.mu.Unlock()
-// 		wait.Wait()
-// 		time.Sleep(80*time.Millisecond)
-// 	} 
-// }
-// servers[] contains the ports of the servers in this group.
-//
-// me is the index of the current server in servers[].
-//
-// the k/v server should store snapshots through the underlying Raft
-// implementation, which should call persister.SaveStateAndSnapshot() to
-// atomically save the Raft state along with the snapshot.
-//
-// the k/v server should snapshot when Raft's saved state exceeds
-// maxraftstate bytes, in order to allow Raft to garbage-collect its
-// log. if maxraftstate is -1, you don't need to snapshot.
-//
-// gid is this group's GID, for interacting with the shardctrler.
-//
-// pass ctrlers[] to shardctrler.MakeClerk() so you can send
-// RPCs to the shardctrler.
-//
-// make_end(servername) turns a server name from a
-// Config.Groups[gid][i] into a labrpc.ClientEnd on which you can
-// send RPCs. You'll need this to send RPCs to other groups.
-//
-// look at client.go for examples of how to use ctrlers[]
-// and make_end() to send RPCs to the group owning a specific shard.
-//
-// StartServer() must return quickly, so it should start goroutines
-// for any long-running work.
+
 func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister, maxraftstate int, gid int, ctrlers []*labrpc.ClientEnd, make_end func(string) *labrpc.ClientEnd) *ShardKV {
 	// call labgob.Register on structures you want
 	// Go's RPC library to marshall/unmarshall.
@@ -424,18 +370,18 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 	kv.stateMachineToPush = make(map[int]map[int]map[string]string)
 
 	kv.garbages = make(map[int]map[int]bool)
+	kv.readPersist(kv.persister.ReadSnapshot())
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 	kv.killCh = make(chan bool, 1)
 
-	//kv.config make a dummpy one with num = -1 and shards values all -1
 
-	kv.readPersist(kv.persister.ReadSnapshot())
-	go kv.applyTicker()
 	go kv.pullConfig()
 	go kv.daemon(kv.pullShards,80)
 	go kv.daemon(kv.tryGC, 100)
+
+	go kv.applyTicker()
 
 	return kv
 }
