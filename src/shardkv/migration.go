@@ -166,46 +166,6 @@ func (kv *ShardKV) ClientOp(op Op)(Err, string) {
 }
 
 
-func (kv *ShardKV) applyMsg() {
-	for {
-		applyMsg := <-kv.applyCh
-		if applyMsg.SnapshotValid {
-			kv.readPersist(applyMsg.Snapshot)
-			continue
-		}
-		op := applyMsg.Command.(Op)
-		if op.Type == "Config" {
-			kv.ConfigOp(op.Config)
-		} else if op.Type == "Migration" {
-			kv.MigrationOp(op)
-		} else {
-			var err Err
-			var value string
-			if op.Type == "Garbage" {
-				err, value = kv.gc(op.ConfigNum, op.Shard)
-			} else {
-				err, value = kv.ClientOp(op)
-			}
-			kv.mu.Lock()
-			var ch chan OpRes
-			if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
-				ch = nil
-			} else{
-			ch = kv.commandChannel[applyMsg.CommandIndex]}
-			kv.mu.Unlock()
-
-			if ch != nil{
-				select {
-				case <-ch:
-				default:
-				}
-				ch <- OpRes{err, value, op.Rnd}
-			}
-		}
-		kv.checkSnapshot(applyMsg.CommandIndex)
-	}
-}
-
 func (kv *ShardKV) pullConfig() {
 	for {
 		_, isLeader := kv.rf.GetState()

@@ -2,21 +2,12 @@ package shardkv
 
 import (
 	"bytes"
-	"fmt"
 
 	"6.5840/labgob"
 	"6.5840/shardctrler"
 )
 
-func (kv *ShardKV) checkSnapshot(index int) {
-	if kv.maxraftstate == -1 {
-		return
-	}
 
-	if float64(kv.persister.RaftStateSize())/float64(kv.maxraftstate) > 0.95 {
-		go kv.rf.Snapshot(index, kv.persist())
-	}
-}
 
 func (kv *ShardKV) persist() []byte {
 	w := new(bytes.Buffer)
@@ -39,21 +30,19 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 	if snapshot == nil || len(snapshot) < 1 {
 		return
 	}
-	buffer := bytes.NewBuffer(snapshot)
-	decoder := labgob.NewDecoder(buffer)
-	var db map[string]string
-	var cid2Seq map[int64]int
-	var toOutShards map[int]map[int]map[string]string
-	var comeInShards map[int]int
-	var myShards map[int]bool
+	decoder := labgob.NewDecoder(bytes.NewBuffer(snapshot))
+	var stateMachine map[string]string
+	var lastClientSerial map[int64]int
+	var shardsToPull map[int]int
+	var shardsToPush map[int]map[int]map[string]string
+	var shardsToServe map[int]bool
 	var garbages map[int]map[int]bool
 	var cfg shardctrler.Config
-	if decoder.Decode(&db) != nil || decoder.Decode(&cid2Seq) != nil || decoder.Decode(&comeInShards) != nil ||
-		decoder.Decode(&toOutShards) != nil || decoder.Decode(&myShards) != nil || decoder.Decode(&cfg) != nil ||
-		decoder.Decode(&garbages) != nil {
-		fmt.Errorf("[decodeSnapshot]: Decode Error!\n")
-	} else {
-		kv.stateMachine, kv.lastClientSerial, kv.config = db, cid2Seq, cfg
-		kv.shardsToPush, kv.shardsToPull, kv.shardsToServe, kv.garbages = toOutShards, comeInShards, myShards, garbages
+
+	if !(decoder.Decode(&stateMachine) != nil || decoder.Decode(&lastClientSerial) != nil || decoder.Decode(&shardsToPull) != nil ||
+		decoder.Decode(&shardsToPush) != nil || decoder.Decode(&shardsToServe) != nil || decoder.Decode(&cfg) != nil ||
+		decoder.Decode(&garbages) != nil) {
+		kv.stateMachine, kv.lastClientSerial, kv.config = stateMachine, lastClientSerial, cfg
+		kv.shardsToPush, kv.shardsToPull, kv.shardsToServe, kv.garbages = shardsToPush, shardsToPull, shardsToServe, garbages
 	}
 }
