@@ -1,7 +1,6 @@
 package shardkv
 
 import (
-	"sync"
 	"time"
 
 	"6.5840/shardctrler"
@@ -21,18 +20,14 @@ type GetShardsReply struct {
 func (kv *ShardKV) tryPullShard() {
 	for {
 		_, isLeader := kv.rf.GetState()
-		kv.mu.Lock()
-		if !isLeader || len(kv.shardsToPull) == 0 {
-			kv.mu.Unlock()
+		if !isLeader{
 			time.Sleep(80*time.Millisecond)
 			continue
 		}
-
-		var wait sync.WaitGroup
+		kv.mu.Lock()
 		for shard, idx := range kv.shardsToPull {
-			wait.Add(1)
 			go func(shard int, cfg shardctrler.Config) {
-				defer wait.Done()
+				//defer wait.Done()
 				args := GetShardsArgs{shard, cfg.Num}
 				gid := cfg.Shards[shard]
 				for _, server := range cfg.Groups[gid] {
@@ -52,7 +47,6 @@ func (kv *ShardKV) tryPullShard() {
 			}(shard, kv.ck.Query(idx))
 		}
 		kv.mu.Unlock()
-		wait.Wait()
 		time.Sleep(80*time.Millisecond)
 	}
 }

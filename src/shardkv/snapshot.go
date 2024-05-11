@@ -37,12 +37,17 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 	var shardsToPush map[int]map[int]map[string]string
 	var shardsToServe map[int]bool
 	var garbages map[int]map[int]bool
-	var cfg shardctrler.Config
+	var config shardctrler.Config
 
-	if !(decoder.Decode(&stateMachine) != nil || decoder.Decode(&lastClientSerial) != nil || decoder.Decode(&shardsToPull) != nil ||
-		decoder.Decode(&shardsToPush) != nil || decoder.Decode(&shardsToServe) != nil || decoder.Decode(&cfg) != nil ||
-		decoder.Decode(&garbages) != nil) {
-		kv.stateMachine, kv.lastClientSerial, kv.config = stateMachine, lastClientSerial, cfg
-		kv.shardsToPush, kv.shardsToPull, kv.shardsToServe, kv.garbages = shardsToPush, shardsToPull, shardsToServe, garbages
-	}
+	decoder.Decode(&stateMachine) 
+	decoder.Decode(&lastClientSerial) 
+	decoder.Decode(&shardsToPull)
+	decoder.Decode(&shardsToPush) 
+	decoder.Decode(&shardsToServe) 
+	decoder.Decode(&config)
+	decoder.Decode(&garbages) 
+
+	kv.stateMachine, kv.lastClientSerial, kv.config = stateMachine, lastClientSerial, config
+	kv.shardsToPush, kv.shardsToPull, kv.shardsToServe, kv.garbages = shardsToPush, shardsToPull, shardsToServe, garbages
+
 }
