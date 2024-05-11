@@ -26,31 +26,34 @@ func (kv *ShardKV) pullShards() {
 		}
 		kv.mu.Lock()
 		for shard, idx := range kv.shardsToPull {
-			go func(shard int, cfg shardctrler.Config) {
-				args := GetShardsArgs{shard, cfg.Num}
-				gid := cfg.Shards[shard]
-				for _, server := range cfg.Groups[gid] {
-					srv := kv.make_end(server)
-					reply := GetShardsReply{}
-					if ok := srv.Call("ShardKV.ShardMigration", &args, &reply); ok && reply.Err == OK {
-						kv.rf.Start(Op{
-							Type:"Migration",
-							Shard: shard,
-							ConfigNum: cfg.Num,
-							StateMachine: reply.StateMachine,
-							LastClientSerial: reply.LastClientSerial,
-						})
-					}
-
-				}
-			}(shard, kv.ck.Query(idx))
+			go kv.sendGetShards(shard, kv.ck.Query(idx))
 		}
 		kv.mu.Unlock()
 		time.Sleep(80*time.Millisecond)
 	}
 }
 
-func (kv *ShardKV) ShardMigration(args *GetShardsArgs, reply *GetShardsReply) {
+func (kv *ShardKV) sendGetShards(shard int, config shardctrler.Config){
+	args := GetShardsArgs{shard, config.Num}
+	gid := config.Shards[shard]
+	for _, server := range config.Groups[gid] {
+		srv := kv.make_end(server)
+		reply := GetShardsReply{}
+		ok := srv.Call("ShardKV.GetShards", &args, &reply)
+		if ok && reply.Err == OK {
+			kv.rf.Start(Op{
+				Type:"Migration",
+				Shard: shard,
+				ConfigNum: config.Num,
+				StateMachine: reply.StateMachine,
+				LastClientSerial: reply.LastClientSerial,
+			})
+		}
+
+	}
+}
+
+func (kv *ShardKV) GetShards(args *GetShardsArgs, reply *GetShardsReply) {
 	reply.Err = ErrWrongLeader
 	if _, isLeader := kv.rf.GetState(); !isLeader {
 		return

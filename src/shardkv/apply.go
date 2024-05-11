@@ -26,14 +26,13 @@ func (kv *ShardKV) ConfigOp(cfg shardctrler.Config) {
 	if len(toOutShard) > 0 {
 		kv.shardsToPush[oldCfg.Num] = make(map[int]map[string]string)
 		for shard := range toOutShard {
-			outDb := make(map[string]string)
+			kv.shardsToPush[oldCfg.Num][shard] = make(map[string]string)
 			for k, v := range kv.stateMachine {
 				if key2shard(k) == shard {
-					outDb[k] = v
+					kv.shardsToPush[oldCfg.Num][shard][k] = v
 					delete(kv.stateMachine, k)
 				}
 			}
-			kv.shardsToPush[oldCfg.Num][shard] = outDb
 		}
 	}
 }
