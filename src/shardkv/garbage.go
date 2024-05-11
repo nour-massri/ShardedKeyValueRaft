@@ -21,7 +21,7 @@ func (kv *ShardKV) GarbageCollection(args *GetShardsArgs, reply *GetShardsReply)
 		return
 	}
 	command := Op{
-		Type:"GC", 
+		Type:"Garbage", 
 		ConfigNum: args.ConfigNum, 
 		Shard: args.Shard,
 		Rnd: nrand(),

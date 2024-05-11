@@ -20,15 +20,15 @@ func (kv *ShardKV) checkSnapshot(index int) {
 
 func (kv *ShardKV) persist() []byte {
 	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
+	encoder := labgob.NewEncoder(w)
 	kv.mu.Lock()
-	e.Encode(kv.stateMachine)
-	e.Encode(kv.lastClientSerial)
-	e.Encode(kv.shardsToPull)
-	e.Encode(kv.shardsToPush)
-	e.Encode(kv.shardsToServe)
-	e.Encode(kv.config)
-	e.Encode(kv.garbages)
+	encoder.Encode(kv.stateMachine)
+	encoder.Encode(kv.lastClientSerial)
+	encoder.Encode(kv.shardsToPull)
+	encoder.Encode(kv.shardsToPush)
+	encoder.Encode(kv.shardsToServe)
+	encoder.Encode(kv.config)
+	encoder.Encode(kv.garbages)
 	kv.mu.Unlock()
 	return w.Bytes()
 }
@@ -39,8 +39,8 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 	if snapshot == nil || len(snapshot) < 1 {
 		return
 	}
-	r := bytes.NewBuffer(snapshot)
-	d := labgob.NewDecoder(r)
+	buffer := bytes.NewBuffer(snapshot)
+	decoder := labgob.NewDecoder(buffer)
 	var db map[string]string
 	var cid2Seq map[int64]int
 	var toOutShards map[int]map[int]map[string]string
@@ -48,9 +48,9 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 	var myShards map[int]bool
 	var garbages map[int]map[int]bool
 	var cfg shardctrler.Config
-	if d.Decode(&db) != nil || d.Decode(&cid2Seq) != nil || d.Decode(&comeInShards) != nil ||
-		d.Decode(&toOutShards) != nil || d.Decode(&myShards) != nil || d.Decode(&cfg) != nil ||
-		d.Decode(&garbages) != nil {
+	if decoder.Decode(&db) != nil || decoder.Decode(&cid2Seq) != nil || decoder.Decode(&comeInShards) != nil ||
+		decoder.Decode(&toOutShards) != nil || decoder.Decode(&myShards) != nil || decoder.Decode(&cfg) != nil ||
+		decoder.Decode(&garbages) != nil {
 		fmt.Errorf("[decodeSnapshot]: Decode Error!\n")
 	} else {
 		kv.stateMachine, kv.lastClientSerial, kv.config = db, cid2Seq, cfg
