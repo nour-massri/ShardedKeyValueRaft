@@ -1,8 +1,8 @@
 package shardkv
 
 import (
-	"strconv"
 	"sync"
+	"time"
 
 	"6.5840/shardctrler"
 )
@@ -20,9 +20,14 @@ func (kv *ShardKV) GarbageCollection(args *GetShardsArgs, reply *GetShardsReply)
 	if _, ok := kv.shardsToPush[args.ConfigNum][args.Shard]; !ok {
 		return
 	}
-	command := Op{"GC", strconv.Itoa(args.ConfigNum), "", nrand(), args.Shard, nrand()}
+	command := Op{
+		Type:"GC", 
+		ConfigNum: args.ConfigNum, 
+		Shard: args.Shard,
+		Rnd: nrand(),
+	}
 	kv.mu.Unlock()
-	reply.Err, _ = kv.handle(command)
+	reply.Err, _ = kv.sendCommand(command)
 	kv.mu.Lock()
 }
 
@@ -39,35 +44,39 @@ func (kv *ShardKV) gc(cfgNum int, shard int) {
 
 
 func (kv *ShardKV) tryGC() {
-	_, isLeader := kv.rf.GetState()
-	kv.mu.Lock()
-	if !isLeader || len(kv.garbages) == 0 {
-		kv.mu.Unlock()
-		return
-	}
-	var wait sync.WaitGroup
-	for cfgNum, shards := range kv.garbages {
-		for shard := range shards {
-			wait.Add(1)
-			go func(shard int, cfg shardctrler.Config) {
-				defer wait.Done()
-				args := GetShardsArgs{shard, cfg.Num}
-				gid := cfg.Shards[shard]
-				for _, server := range cfg.Groups[gid] {
-					srv := kv.make_end(server)
-					reply := GetShardsReply{}
-					if ok := srv.Call("ShardKV.GarbageCollection", &args, &reply); ok && reply.Err == OK {
-						kv.mu.Lock()
-						delete(kv.garbages[cfgNum], shard)
-						if len(kv.garbages[cfgNum]) == 0 {
-							delete(kv.garbages, cfgNum)
-						}
-						kv.mu.Unlock()
-					}
-				}
-			}(shard, kv.ck.Query(cfgNum))
+	for {
+		_, isLeader := kv.rf.GetState()
+		kv.mu.Lock()
+		if !isLeader || len(kv.garbages) == 0 {
+			kv.mu.Unlock()
+			time.Sleep(100*time.Millisecond)
+			continue
 		}
+		var wait sync.WaitGroup
+		for cfgNum, shards := range kv.garbages {
+			for shard := range shards {
+				wait.Add(1)
+				go func(shard int, cfg shardctrler.Config) {
+					defer wait.Done()
+					args := GetShardsArgs{shard, cfg.Num}
+					gid := cfg.Shards[shard]
+					for _, server := range cfg.Groups[gid] {
+						srv := kv.make_end(server)
+						reply := GetShardsReply{}
+						if ok := srv.Call("ShardKV.GarbageCollection", &args, &reply); ok && reply.Err == OK {
+							kv.mu.Lock()
+							delete(kv.garbages[cfgNum], shard)
+							if len(kv.garbages[cfgNum]) == 0 {
+								delete(kv.garbages, cfgNum)
+							}
+							kv.mu.Unlock()
+						}
+					}
+				}(shard, kv.ck.Query(cfgNum))
+			}
+		}
+		kv.mu.Unlock()
+		wait.Wait()
+		time.Sleep(100*time.Millisecond)
 	}
-	kv.mu.Unlock()
-	wait.Wait()
 }

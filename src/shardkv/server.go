@@ -1,7 +1,6 @@
 package shardkv
 
 import (
-	"strconv"
 	"sync"
 	"time"
 
@@ -13,11 +12,28 @@ import (
 
 type Op struct {
 	Type  string
+
+	//for ClientOp
 	Key   string
 	Value string
 	ClientId   int64
 	Serial   int
 	Rnd int64
+
+	//config
+	Config shardctrler.Config
+
+	//Migration and GC
+	Shard int
+	ConfigNum int
+	StateMachine map[string]string
+	LastClientSerial map[int64]int
+
+}
+
+type OpRes struct{
+	Err Err
+	Value string
 }
 
 type ShardKV struct {
@@ -48,26 +64,40 @@ type ShardKV struct {
 }
 
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
-	command := Op{"Get", args.Key, "", nrand(), 0, nrand()}
-	reply.Err, reply.Value = kv.handle(command)
+	reply.Err, reply.Value = kv.sendCommand(
+		Op{
+			Type:"Get", 
+			Key:args.Key, 
+			Rnd: nrand(),
+		},
+	)
 }
 
 func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
-	command := Op{args.Op, args.Key, args.Value, args.ClientId, args.Serial, nrand()}
-	reply.Err, _ = kv.handle(command)
+	reply.Err, _ = kv.sendCommand(
+		Op{
+			Type: args.Op, 
+			Key: args.Key, 
+			Value: args.Value,
+			ClientId: args.ClientId,
+			Serial: args.Serial,
+			Rnd: nrand(),
+		},
+	)
 }
 
-func (kv *ShardKV) handle(command Op) (Err, string) {
+func (kv *ShardKV) sendCommand(command Op) (Err, string) {
 	index, _, isLeader := kv.rf.Start(command)
-	if isLeader {
-		ch := kv.put(index, true)
-		op := kv.notified(ch, index)
-		if op.Type == command.Type && op.Rnd == command.Rnd {
-			return OK, op.Value
-		}
-		if op.Type == ErrWrongGroup {
-			return ErrWrongGroup, ""
-		}
+	if !isLeader {
+		return ErrWrongLeader, ""
+	}
+	ch := kv.put(index, true)
+	op := kv.notified(ch, index)
+	if op.Type == command.Type && op.Rnd == command.Rnd {
+		return OK, op.Value
+	}
+	if op.Type == ErrWrongGroup {
+		return ErrWrongGroup, ""
 	}
 	return ErrWrongLeader, ""
 }
@@ -114,78 +144,25 @@ func (kv *ShardKV) Kill() {
 }
 
 func (kv *ShardKV) tryPollNewCfg() {
-	_, isLeader := kv.rf.GetState()
-	kv.mu.Lock()
-	if !isLeader || len(kv.shardsToPull) > 0 {
-		kv.mu.Unlock()
-		return
-	}
-	next := kv.config.Num + 1
-	kv.mu.Unlock()
-	cfg := kv.ck.Query(next)
-	if cfg.Num == next {
-		kv.rf.Start(cfg) //sync follower with new cfg
-	}
-}
-
-
-func (kv *ShardKV) tryPullShard() {
-	_, isLeader := kv.rf.GetState()
-	kv.mu.Lock()
-	if !isLeader || len(kv.shardsToPull) == 0 {
-		kv.mu.Unlock()
-		return
-	}
-
-	var wait sync.WaitGroup
-	for shard, idx := range kv.shardsToPull {
-		wait.Add(1)
-		go func(shard int, cfg shardctrler.Config) {
-			defer wait.Done()
-			args := GetShardsArgs{shard, cfg.Num}
-			gid := cfg.Shards[shard]
-			for _, server := range cfg.Groups[gid] {
-				srv := kv.make_end(server)
-				reply := GetShardsReply{}
-				if ok := srv.Call("ShardKV.ShardMigration", &args, &reply); ok && reply.Err == OK {
-					kv.rf.Start(reply)
-				}
-
-			}
-		}(shard, kv.ck.Query(idx))
-	}
-	kv.mu.Unlock()
-	wait.Wait()
-}
-
-func (kv *ShardKV) daemon(do func(), sleepMS int) {
 	for {
-		select {
-		default:
-			do()
+		_, isLeader := kv.rf.GetState()
+		kv.mu.Lock()
+		if !isLeader || len(kv.shardsToPull) > 0 {
+			kv.mu.Unlock()
+			time.Sleep(50*time.Millisecond)
+			continue
 		}
-		time.Sleep(time.Duration(sleepMS) * time.Millisecond)
+		next := kv.config.Num + 1
+		kv.mu.Unlock()
+		cfg := kv.ck.Query(next)
+		if cfg.Num == next {
+			kv.rf.Start(Op{
+				Type: "Config",
+				Config: cfg,
+			}) //sync follower with new cfg
+		}
+		time.Sleep(50*time.Millisecond)
 	}
-}
-
-func (kv *ShardKV) apply(applyMsg raft.ApplyMsg) {
-	if cfg, ok := applyMsg.Command.(shardctrler.Config); ok {
-		kv.updateInAndOutDataShard(cfg)
-	} else if migrationData, ok := applyMsg.Command.(GetShardsReply); ok {
-		kv.updateDBWithMigrateData(migrationData)
-	} else {
-		op := applyMsg.Command.(Op)
-		if op.Type == "GC" {
-			cfgNum, _ := strconv.Atoi(op.Key)
-			kv.gc(cfgNum, op.Serial)
-		} else {
-			kv.normal(&op)
-		}
-		if notifyCh := kv.put(applyMsg.CommandIndex, false); notifyCh != nil {
-			send(notifyCh, op)
-		}
-	}
-	kv.checkSnapshot(applyMsg.CommandIndex)
 }
 
 func (kv *ShardKV) updateInAndOutDataShard(cfg shardctrler.Config) {
@@ -223,27 +200,27 @@ func (kv *ShardKV) updateInAndOutDataShard(cfg shardctrler.Config) {
 	}
 }
 
-func (kv *ShardKV) updateDBWithMigrateData(migrationData GetShardsReply) {
+func (kv *ShardKV) updateDBWithMigrateData(op Op) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	if migrationData.ConfigNum != kv.config.Num-1 {
+	if op.ConfigNum != kv.config.Num-1 {
 		return
 	}
 
-	delete(kv.shardsToPull, migrationData.Shard)
+	delete(kv.shardsToPull, op.Shard)
 	//this check is necessary, to avoid use  kv.cfg.Num-1 to update kv.cfg.Num's shard
-	if _, ok := kv.shardsToServe[migrationData.Shard]; !ok {
-		kv.shardsToServe[migrationData.Shard] = true
-		for k, v := range migrationData.StateMachine {
+	if _, ok := kv.shardsToServe[op.Shard]; !ok {
+		kv.shardsToServe[op.Shard] = true
+		for k, v := range op.StateMachine {
 			kv.stateMachine[k] = v
 		}
-		for k, v := range migrationData.LastClientSerial {
+		for k, v := range op.LastClientSerial {
 			kv.lastClientSerial[k] = max(v, kv.lastClientSerial[k])
 		}
-		if _, ok := kv.garbages[migrationData.ConfigNum]; !ok {
-			kv.garbages[migrationData.ConfigNum] = make(map[int]bool)
+		if _, ok := kv.garbages[op.ConfigNum]; !ok {
+			kv.garbages[op.ConfigNum] = make(map[int]bool)
 		}
-		kv.garbages[migrationData.ConfigNum][migrationData.Shard] = true
+		kv.garbages[op.ConfigNum][op.Shard] = true
 	}
 }
 
@@ -269,13 +246,34 @@ func (kv *ShardKV) normal(op *Op) {
 	kv.mu.Unlock()
 }
 
+func (kv *ShardKV) applyMsg() {
+	for {
+		applyMsg := <-kv.applyCh
+		if applyMsg.SnapshotValid {
+			kv.readPersist(applyMsg.Snapshot)
+			continue
+		}
+		op := applyMsg.Command.(Op)
+		if op.Type == "Config" {
+			kv.updateInAndOutDataShard(op.Config)
+		} else if op.Type == "Migration" {
+			kv.updateDBWithMigrateData(op)
+		} else {
+			if op.Type == "GC" {
+				kv.gc(op.ConfigNum, op.Shard)
+			} else {
+				kv.normal(&op)
+			}
+			if notifyCh := kv.put(applyMsg.CommandIndex, false); notifyCh != nil {
+				send(notifyCh, op)
+			}
+		}
+		kv.checkSnapshot(applyMsg.CommandIndex)
+	}
+}
 func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister, maxraftstate int, gid int, masters []*labrpc.ClientEnd, make_end func(string) *labrpc.ClientEnd) *ShardKV {
-	// call labgob.Register on structures you want
-	// Go's RPC library to marshall/unmarshall.
+
 	labgob.Register(Op{})
-	labgob.Register(GetShardsArgs{})
-	labgob.Register(GetShardsReply{})
-	labgob.Register(shardctrler.Config{})
 
 	kv := new(ShardKV)
 	kv.me = me
@@ -286,8 +284,6 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 
 	// Your initialization code here.
 	kv.persister = persister
-
-	// Use something like this to talk to the shardmaster:
 	kv.ck = shardctrler.MakeClerk(kv.masters)
 	kv.config = shardctrler.Config{}
 
@@ -304,23 +300,10 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 
 	kv.applyCh = make(chan raft.ApplyMsg)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
-	go kv.daemon(kv.tryPollNewCfg, 50)
-	go kv.daemon(kv.tryPullShard, 80)
-	go kv.daemon(kv.tryGC, 100)
+	go kv.tryPollNewCfg()
+	go kv.tryPullShard()
+	go kv.tryGC()
+	go kv.applyMsg()
 
-	go kv.applyDaemon()
 	return kv
-}
-
-func (kv *ShardKV) applyDaemon() {
-	for {
-		
-		applyMsg := <-kv.applyCh
-		if !applyMsg.CommandValid {
-			kv.readPersist(applyMsg.Snapshot)
-			continue
-		}
-		kv.apply(applyMsg)
-		
-	}
 }
