@@ -61,7 +61,7 @@ func (kv *ShardKV) GetShards(args *GetShardsArgs, reply *GetShardsReply) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	reply.Err = ErrWrongGroup
-	if args.ConfigNum >= kv.config.Num {
+	if kv.config.Num <= args.ConfigNum {
 		return
 	}
 	reply.Err = OK

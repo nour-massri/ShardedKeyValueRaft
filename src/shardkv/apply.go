@@ -3,38 +3,40 @@ package shardkv
 import "6.5840/shardctrler"
 
 
-func (kv *ShardKV) ConfigOp(cfg shardctrler.Config) {
+func (kv *ShardKV) ConfigOp(newConfig shardctrler.Config) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	if cfg.Num <= kv.config.Num {
+	if newConfig.Num <= kv.config.Num {
 		return
 	}
 
-	oldCfg, toOutShard := kv.config, kv.shardsToServe
-	kv.shardsToServe, kv.config = make(map[int]bool), cfg
-	for shard, gid := range cfg.Shards {
-		if gid != kv.gid {
-			continue
-		}
-		if _, ok := toOutShard[shard]; ok || oldCfg.Num == 0 {
-			kv.shardsToServe[shard] = true
-			delete(toOutShard, shard)
-		} else {
-			kv.shardsToPull[shard] = oldCfg.Num
-		}
-	}
-	if len(toOutShard) > 0 {
-		kv.shardsToPush[oldCfg.Num] = make(map[int]map[string]string)
-		for shard := range toOutShard {
-			kv.shardsToPush[oldCfg.Num][shard] = make(map[string]string)
-			for k, v := range kv.stateMachine {
-				if key2shard(k) == shard {
-					kv.shardsToPush[oldCfg.Num][shard][k] = v
-					delete(kv.stateMachine, k)
-				}
+	oldConfig, tmpShard := kv.config, kv.shardsToServe
+	kv.shardsToServe = make(map[int]bool)
+	kv.config = newConfig
+	for shard, gid := range newConfig.Shards {
+		if gid == kv.gid {
+			_, ok := tmpShard[shard]
+			if  ok || oldConfig.Num == 0 {
+				delete(tmpShard, shard)
+				kv.shardsToServe[shard] = true
+			} else {
+				kv.shardsToPull[shard] = oldConfig.Num
 			}
 		}
 	}
+	
+	kv.shardsToPush[oldConfig.Num] = make(map[int]map[string]string)
+	for shard := range tmpShard {
+		kv.shardsToPush[oldConfig.Num][shard] = make(map[string]string)
+		
+		for k, v := range kv.stateMachine {
+			if key2shard(k) == shard {
+				kv.shardsToPush[oldConfig.Num][shard][k] = v
+				delete(kv.stateMachine, k)
+			}
+		}
+	}
+
 }
 
 func (kv *ShardKV) MigrationOp(op Op) {
