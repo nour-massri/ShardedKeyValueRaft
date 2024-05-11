@@ -17,7 +17,7 @@ type GetShardsReply struct {
 	LastClientSerial map[int64]int
 }
 
-func (kv *ShardKV) tryPullShard() {
+func (kv *ShardKV) pullShards() {
 	for {
 		_, isLeader := kv.rf.GetState()
 		if !isLeader{
@@ -27,7 +27,6 @@ func (kv *ShardKV) tryPullShard() {
 		kv.mu.Lock()
 		for shard, idx := range kv.shardsToPull {
 			go func(shard int, cfg shardctrler.Config) {
-				//defer wait.Done()
 				args := GetShardsArgs{shard, cfg.Num}
 				gid := cfg.Shards[shard]
 				for _, server := range cfg.Groups[gid] {
@@ -63,102 +62,15 @@ func (kv *ShardKV) ShardMigration(args *GetShardsArgs, reply *GetShardsReply) {
 		return
 	}
 	reply.Err = OK
-	reply.StateMachine, reply.LastClientSerial = kv.copyDBAndDedupMap(args.ConfigNum, args.Shard)
-}
-
-func (kv *ShardKV) copyDBAndDedupMap(config int, shard int) (map[string]string, map[int64]int) {
-	db := make(map[string]string)
-	cid2seq := make(map[int64]int)
-	for k, v := range kv.shardsToPush[config][shard] {
-		db[k] = v
-	}
+	reply.StateMachine = make(map[string]string)
+	reply.LastClientSerial = make(map[int64]int)
 	for k, v := range kv.lastClientSerial {
-		cid2seq[k] = v
+		reply.LastClientSerial[k] = v
 	}
-	return db, cid2seq
-}
-
-
-func (kv *ShardKV) ConfigOp(cfg shardctrler.Config) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if cfg.Num <= kv.config.Num {
-		return
-	}
-
-	oldCfg, toOutShard := kv.config, kv.shardsToServe
-	kv.shardsToServe, kv.config = make(map[int]bool), cfg
-	for shard, gid := range cfg.Shards {
-		if gid != kv.gid {
-			continue
-		}
-		if _, ok := toOutShard[shard]; ok || oldCfg.Num == 0 {
-			kv.shardsToServe[shard] = true
-			delete(toOutShard, shard)
-		} else {
-			kv.shardsToPull[shard] = oldCfg.Num
-		}
-	}
-	if len(toOutShard) > 0 {
-		kv.shardsToPush[oldCfg.Num] = make(map[int]map[string]string)
-		for shard := range toOutShard {
-			outDb := make(map[string]string)
-			for k, v := range kv.stateMachine {
-				if key2shard(k) == shard {
-					outDb[k] = v
-					delete(kv.stateMachine, k)
-				}
-			}
-			kv.shardsToPush[oldCfg.Num][shard] = outDb
-		}
+	for k, v := range kv.shardsToPush[args.ConfigNum][args.Shard] {
+		reply.StateMachine[k] = v
 	}
 }
-
-func (kv *ShardKV) MigrationOp(op Op) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if op.ConfigNum != kv.config.Num-1 {
-		return
-	}
-
-	delete(kv.shardsToPull, op.Shard)
-	if _, ok := kv.shardsToServe[op.Shard]; !ok {
-		kv.shardsToServe[op.Shard] = true
-		for k, v := range op.StateMachine {
-			kv.stateMachine[k] = v
-		}
-		for k, v := range op.LastClientSerial {
-			kv.lastClientSerial[k] = max(v, kv.lastClientSerial[k])
-		}
-		if _, ok := kv.garbages[op.ConfigNum]; !ok {
-			kv.garbages[op.ConfigNum] = make(map[int]bool)
-		}
-		kv.garbages[op.ConfigNum][op.Shard] = true
-	}
-}
-
-func (kv *ShardKV) ClientOp(op Op)(Err, string) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if _, ok := kv.shardsToServe[key2shard(op.Key)]; !ok {
-		return ErrWrongGroup, ""
-	} else {
-		serial, exists := kv.lastClientSerial[op.ClientId]
-		if !exists || op.Serial > serial {
-			kv.lastClientSerial[op.ClientId] = op.Serial
-			if op.Type == "Put" {
-				kv.stateMachine[op.Key] = op.Value
-			} else if op.Type == "Append" {
-				kv.stateMachine[op.Key] += op.Value
-			}
-		}
-		if op.Type == "Get" {
-			return OK, kv.stateMachine[op.Key]
-		}
-		return OK, ""
-	}
-}
-
 
 func (kv *ShardKV) pullConfig() {
 	for {

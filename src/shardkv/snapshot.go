@@ -19,7 +19,6 @@ func (kv *ShardKV) persist() []byte {
 	encoder.Encode(kv.shardsToPush)
 	encoder.Encode(kv.shardsToServe)
 	encoder.Encode(kv.config)
-	encoder.Encode(kv.garbages)
 	kv.mu.Unlock()
 	return w.Bytes()
 }
@@ -36,7 +35,6 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 	var shardsToPull map[int]int
 	var shardsToPush map[int]map[int]map[string]string
 	var shardsToServe map[int]bool
-	var garbages map[int]map[int]bool
 	var config shardctrler.Config
 
 	decoder.Decode(&stateMachine) 
@@ -45,9 +43,11 @@ func (kv *ShardKV) readPersist(snapshot []byte) {
 	decoder.Decode(&shardsToPush) 
 	decoder.Decode(&shardsToServe) 
 	decoder.Decode(&config)
-	decoder.Decode(&garbages) 
 
-	kv.stateMachine, kv.lastClientSerial, kv.config = stateMachine, lastClientSerial, config
-	kv.shardsToPush, kv.shardsToPull, kv.shardsToServe, kv.garbages = shardsToPush, shardsToPull, shardsToServe, garbages
-
+	kv.stateMachine  = stateMachine
+	kv.lastClientSerial =  lastClientSerial
+	kv.config = config
+	kv.shardsToPush = shardsToPush 
+	kv.shardsToPull = shardsToPull
+	kv.shardsToServe = shardsToServe
 }

@@ -62,7 +62,6 @@ type ShardKV struct {
 	shardsToPush  map[int]map[int]map[string]string
 	shardsToPull map[int]int                      
 	shardsToServe       map[int]bool
-	garbages     map[int]map[int]bool            
 
 }
 
@@ -79,15 +78,15 @@ func (kv *ShardKV) sendCommand(command Op) (Err, string) {
 	kv.mu.Unlock()
 
 	var opRes OpRes
+	var ok bool
 	select {
-		case notifyArg, ok := <-ch:
+		case opRes, ok = <-ch:
 			if ok {
 				close(ch)
 			}
 			kv.mu.Lock()
 			delete(kv.commandChannel, index)
 			kv.mu.Unlock()
-			opRes = notifyArg
 		case <-time.After(time.Duration(1000) * time.Millisecond):
 			opRes = OpRes{}
 	}
@@ -127,47 +126,6 @@ func (kv *ShardKV) Kill() {
 	kv.rf.Kill()
 }
 
-func (kv *ShardKV) applyMsg() {
-	for {
-		applyMsg := <-kv.applyCh
-		if applyMsg.SnapshotValid {
-			kv.readPersist(applyMsg.Snapshot)
-			continue
-		}
-		op := applyMsg.Command.(Op)
-		if op.Type == "Config" {
-			kv.ConfigOp(op.Config)
-		} else if op.Type == "Migration" {
-			kv.MigrationOp(op)
-		} else {
-			var err Err
-			var value string
-			if op.Type == "Garbage" {
-				err, value = kv.gc(op.ConfigNum, op.Shard)
-			} else {
-				err, value = kv.ClientOp(op)
-			}
-			kv.mu.Lock()
-			var ch chan OpRes
-			if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
-				ch = nil
-			} else{
-			ch = kv.commandChannel[applyMsg.CommandIndex]}
-			kv.mu.Unlock()
-
-			if ch != nil{
-				select {
-				case <-ch:
-				default:
-				}
-				ch <- OpRes{err, value, op.Rnd}
-			}
-		}
-		if kv.maxraftstate != -1 && 10* kv.persister.RaftStateSize() > 9 * kv.maxraftstate {
-			go kv.rf.Snapshot(applyMsg.CommandIndex, kv.persist())
-		}
-	}
-}
 func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister, maxraftstate int, gid int, masters []*labrpc.ClientEnd, make_end func(string) *labrpc.ClientEnd) *ShardKV {
 
 	labgob.Register(Op{})
@@ -192,13 +150,11 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 	kv.shardsToPush = make(map[int]map[int]map[string]string)
 	kv.shardsToPull = make(map[int]int)
 	kv.shardsToServe = make(map[int]bool)
-	kv.garbages = make(map[int]map[int]bool)
 
 	kv.readPersist(kv.persister.ReadSnapshot())
 
 	go kv.pullConfig()
-	go kv.tryPullShard()
-	go kv.tryGC()
+	go kv.pullShards()
 	go kv.applyMsg()
 
 	return kv
