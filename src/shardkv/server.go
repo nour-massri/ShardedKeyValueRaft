@@ -34,6 +34,7 @@ type Op struct {
 type OpRes struct{
 	Err Err
 	Value string
+	Rnd int64
 }
 
 type ShardKV struct {
@@ -53,13 +54,13 @@ type ShardKV struct {
 	persister *raft.Persister
 
 	stateMachine        map[string]string
-	commandChannel    map[int]chan Op
+	commandChannel    map[int]chan OpRes
 	lastClientSerial   map[int64]int
 
-	shardsToPush  map[int]map[int]map[string]string "cfg number -> (shard -> db)"
-	shardsToPull map[int]int                       "shard -> config number"
-	shardsToServe       map[int]bool                      "record which i-shard can offer service"
-	garbages     map[int]map[int]bool              "cfg number -> shards"
+	shardsToPush  map[int]map[int]map[string]string
+	shardsToPull map[int]int                      
+	shardsToServe       map[int]bool
+	garbages     map[int]map[int]bool            
 
 }
 
@@ -91,18 +92,24 @@ func (kv *ShardKV) sendCommand(command Op) (Err, string) {
 	if !isLeader {
 		return ErrWrongLeader, ""
 	}
-	ch := kv.put(index, true)
-	op := kv.notified(ch, index)
-	if op.Type == command.Type && op.Rnd == command.Rnd {
-		return OK, op.Value
+	kv.mu.Lock()
+	if _, ok := kv.commandChannel[index]; !ok {
+		kv.commandChannel[index] = make(chan OpRes, 1)
 	}
-	if op.Type == ErrWrongGroup {
+	ch := kv.commandChannel[index]
+	kv.mu.Unlock()
+	
+	opRes := kv.notified(ch, index)
+	if opRes.Err == OK && opRes.Rnd == command.Rnd {
+		return OK, opRes.Value
+	}
+	if opRes.Err == ErrWrongGroup {
 		return ErrWrongGroup, ""
 	}
 	return ErrWrongLeader, ""
 }
 
-func send(notifyCh chan Op, op Op) {
+func send(notifyCh chan OpRes, op OpRes) {
 	select {
 	case <-notifyCh:
 	default:
@@ -110,7 +117,7 @@ func send(notifyCh chan Op, op Op) {
 	notifyCh <- op
 }
 
-func (kv *ShardKV) notified(ch chan Op, index int) Op {
+func (kv *ShardKV) notified(ch chan OpRes, index int) OpRes {
 	select {
 	case notifyArg, ok := <-ch:
 		if ok {
@@ -121,22 +128,8 @@ func (kv *ShardKV) notified(ch chan Op, index int) Op {
 		kv.mu.Unlock()
 		return notifyArg
 	case <-time.After(time.Duration(1000) * time.Millisecond):
-		return Op{}
+		return OpRes{}
 	}
-}
-
-
-
-func (kv *ShardKV) put(idx int, createIfNotExists bool) chan Op {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if _, ok := kv.commandChannel[idx]; !ok {
-		if !createIfNotExists {
-			return nil
-		}
-		kv.commandChannel[idx] = make(chan Op, 1)
-	}
-	return kv.commandChannel[idx]
 }
 
 func (kv *ShardKV) Kill() {
@@ -224,11 +217,12 @@ func (kv *ShardKV) updateDBWithMigrateData(op Op) {
 	}
 }
 
-func (kv *ShardKV) normal(op *Op) {
+func (kv *ShardKV) normal(op Op)(Err, string) {
 	shard := key2shard(op.Key)
 	kv.mu.Lock()
+	defer kv.mu.Unlock()
 	if _, ok := kv.shardsToServe[shard]; !ok {
-		op.Type = ErrWrongGroup
+		return ErrWrongGroup, ""
 	} else {
 		maxSeq, found := kv.lastClientSerial[op.ClientId]
 		if !found || op.Serial > maxSeq {
@@ -240,10 +234,10 @@ func (kv *ShardKV) normal(op *Op) {
 			kv.lastClientSerial[op.ClientId] = op.Serial
 		}
 		if op.Type == "Get" {
-			op.Value = kv.stateMachine[op.Key]
+			return OK, kv.stateMachine[op.Key]
 		}
+		return OK, ""
 	}
-	kv.mu.Unlock()
 }
 
 func (kv *ShardKV) applyMsg() {
@@ -259,14 +253,25 @@ func (kv *ShardKV) applyMsg() {
 		} else if op.Type == "Migration" {
 			kv.updateDBWithMigrateData(op)
 		} else {
+			var err Err
+			var value string
 			if op.Type == "GC" {
-				kv.gc(op.ConfigNum, op.Shard)
+				err, value = kv.gc(op.ConfigNum, op.Shard)
 			} else {
-				kv.normal(&op)
+				err, value = kv.normal(op)
 			}
-			if notifyCh := kv.put(applyMsg.CommandIndex, false); notifyCh != nil {
-				send(notifyCh, op)
+			kv.mu.Lock()
+			var ch chan OpRes
+			if _, ok := kv.commandChannel[applyMsg.CommandIndex]; !ok {
+				ch = nil
+			} else{
+			ch = kv.commandChannel[applyMsg.CommandIndex]}
+			kv.mu.Unlock()
+
+			if ch != nil{
+				send(ch, OpRes{err, value, op.Rnd})
 			}
+			
 		}
 		kv.checkSnapshot(applyMsg.CommandIndex)
 	}
@@ -288,7 +293,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 	kv.config = shardctrler.Config{}
 
 	kv.stateMachine = make(map[string]string)
-	kv.commandChannel = make(map[int]chan Op)
+	kv.commandChannel = make(map[int]chan OpRes)
 	kv.lastClientSerial = make(map[int64]int)
 
 	kv.shardsToPush = make(map[int]map[int]map[string]string)

@@ -31,7 +31,7 @@ func (kv *ShardKV) GarbageCollection(args *GetShardsArgs, reply *GetShardsReply)
 	kv.mu.Lock()
 }
 
-func (kv *ShardKV) gc(cfgNum int, shard int) {
+func (kv *ShardKV) gc(cfgNum int, shard int) (Err, string) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	if _, ok := kv.shardsToPush[cfgNum]; ok {
@@ -40,6 +40,7 @@ func (kv *ShardKV) gc(cfgNum int, shard int) {
 			delete(kv.shardsToPush, cfgNum)
 		}
 	}
+	return OK, ""
 }
 
 
