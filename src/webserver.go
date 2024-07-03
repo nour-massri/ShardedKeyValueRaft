@@ -13,13 +13,15 @@ var cfg = shardkv.Make_config(3, false, -1)
 var ck = cfg.MakeClient()
 
 func main() {
-	fmt.Printf("Web Server started...\n")
 
 	//cfg = shardkv.Make_config(3, false, -1)
 
 	cfg.Join(0)
+	fmt.Printf("Replica Group 0 started	\n")
 	cfg.Join(1)
+	fmt.Printf("Replica Group 1 started	\n")
 	cfg.Join(2)
+	fmt.Printf("Replica Group 2 started	\n")
 
 	http.HandleFunc("/put", putHandler)
     http.HandleFunc("/get", getHandler)
@@ -27,15 +29,6 @@ func main() {
 
     fmt.Println("Starting server on :8080...")
     log.Fatal(http.ListenAndServe(":8080", nil))
-
-	// ck.Put("a", "b")
-	// //ck.Append(ka[i], x)
-
-	// test := ck.Get("a")
-	// fmt.Println("Sum:", test)
-
-	// // allow time for shards to transfer.
-	// time.Sleep(1 * time.Second)
 
 }
 
@@ -74,11 +67,6 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     value := ck.Get(key)
-
-    if value == "" {
-        http.Error(w, "Key not found", http.StatusNotFound)
-        return
-    }
 
     response := map[string]string{key: value}
     w.Header().Set("Content-Type", "application/json")
